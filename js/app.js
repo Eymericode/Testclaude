@@ -84,6 +84,23 @@
   }
   const totalMatches = (list) => list.reduce((a, m) => a + norm(m).matches, 0);
 
+  const SQUADS = ['Solo', 'Duo', 'Trio', 'Squad'];
+  /* Composition d'une entrée (Solo/Duo/Trio/Squad), avec compatibilité ancien champ "mode". */
+  function matchSquad(m) {
+    if (m.source === 'epic') return null; // session agrégée : pas de composition précise
+    if (m.squad) return m.squad;
+    if (SQUADS.indexOf(m.mode) !== -1) return m.mode;
+    return null;
+  }
+  /* Type de partie (Battle Royale / Arène / Reload…), avec compatibilité ancien champ "mode". */
+  function matchGameType(m) {
+    if (m.source === 'epic') return null;
+    if (m.gameType) return m.gameType;
+    if (m.mode === 'Arena') return 'Arène';
+    if (SQUADS.indexOf(m.mode) !== -1) return 'Battle Royale';
+    return m.mode || 'Autre';
+  }
+
   /* ---------- Semaines (ISO) ---------- */
   function isoWeek(dateStr) {
     const date = new Date(dateStr + 'T00:00:00');
@@ -119,12 +136,15 @@
   }
 
   /* ---------- Filtrage ---------- */
+  let squadFilter = 'all';
+  let typeFilter = 'all';
+
   function filtered() {
-    const mode = $('#filterMode').value;
     const period = $('#filterPeriod').value;
     let list = matches.slice().sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
-    if (mode !== 'all') list = list.filter((m) => m.mode === mode);
+    if (squadFilter !== 'all') list = list.filter((m) => matchSquad(m) === squadFilter);
+    if (typeFilter !== 'all') list = list.filter((m) => matchGameType(m) === typeFilter);
 
     if (period === '7' || period === '30') {
       const days = Number(period);
@@ -236,13 +256,14 @@
       values: Object.values(buckets),
     }, { color: '#00cec9' });
 
-    // Kills moyens par mode
+    // Kills moyens par composition (Solo/Duo/Trio/Squad ; sessions Epic = "Auto")
     const modes = {};
     list.forEach((m) => {
       const x = norm(m);
-      modes[m.mode] = modes[m.mode] || { k: 0, n: 0 };
-      modes[m.mode].k += x.kills;
-      modes[m.mode].n += x.matches;
+      const label = matchSquad(m) || (m.source === 'epic' ? 'Auto' : 'Autre');
+      modes[label] = modes[label] || { k: 0, n: 0 };
+      modes[label].k += x.kills;
+      modes[label].n += x.matches;
     });
     const modeLabels = Object.keys(modes);
     MiniChart.bar($('#chartMode'), {
@@ -279,9 +300,10 @@
         let badge = `<span class="badge loss">#${m.placement}</span>`;
         if (isWin(m)) badge = `<span class="badge win">👑 #1</span>`;
         else if (isTop(m)) badge = `<span class="badge top">#${m.placement}</span>`;
+        const label = escapeHtml((matchGameType(m) || '—') + ' · ' + (matchSquad(m) || '—'));
         return `<tr>
           <td>${m.date}</td>
-          <td>${m.mode}</td>
+          <td>${label}</td>
           <td>${m.kills}</td>
           <td>${m.assists || 0}</td>
           <td>${badge}</td>
@@ -364,13 +386,14 @@
       }
     }
 
-    // 6. Meilleur mode
+    // 6. Meilleure composition
     const modes = {};
     list.forEach((m) => {
-      modes[m.mode] = modes[m.mode] || { k: 0, n: 0, w: 0 };
-      modes[m.mode].k += Number(m.kills) || 0;
-      modes[m.mode].n += 1;
-      if (isWin(m)) modes[m.mode].w += 1;
+      const x = norm(m);
+      const label = matchSquad(m) || (m.source === 'epic' ? 'Auto (Epic)' : 'Autre');
+      modes[label] = modes[label] || { k: 0, n: 0 };
+      modes[label].k += x.kills;
+      modes[label].n += x.matches;
     });
     let best = null;
     Object.entries(modes).forEach(([mode, d]) => {
@@ -380,7 +403,7 @@
       }
     });
     if (best) {
-      insights.push(['good', '🏅 Ton meilleur mode', `C'est en <strong>${best.mode}</strong> que tu performes le mieux (${best.avg} kills/match sur ${best.n} parties). Joue-le quand tu veux monter en confiance.`]);
+      insights.push(['good', '🏅 Ta meilleure composition', `C'est en <strong>${best.mode}</strong> que tu performes le mieux (${best.avg} kills/partie sur ${best.n} parties). Joue-la quand tu veux monter en confiance.`]);
     }
 
     // 7. Objectif du moment
@@ -509,16 +532,33 @@
 
   /* ---------- Rendu global ---------- */
   function renderDashboard() {
-    const list = filtered();
     const hasData = matches.length > 0;
     $('#emptyDashboard').classList.toggle('hidden', hasData);
     $('#statCards').classList.toggle('hidden', !hasData);
     $('.chart-grid').classList.toggle('hidden', !hasData);
+    updateFilterSummary();
     if (!hasData) return;
 
-    const s = computeStats(list) || computeStats(matches);
+    const list = filtered();
+    const s = computeStats(list);
+    if (!s) {
+      // Des parties existent, mais aucune ne correspond au filtre choisi.
+      $('#statCards').innerHTML = `<div class="card"><div class="label">Filtre</div>
+        <div class="value">0</div><div class="sub">Aucune partie pour ce filtre</div></div>`;
+      renderCharts([], { avgKills: 0, avgDamage: 0 });
+      return;
+    }
     renderCards(s);
     renderCharts(list, s);
+  }
+
+  function updateFilterSummary() {
+    const el = $('#filterSummary');
+    if (!el) return;
+    const parts = [];
+    if (squadFilter !== 'all') parts.push(squadFilter);
+    if (typeFilter !== 'all') parts.push(typeFilter);
+    el.textContent = parts.length ? '▸ ' + parts.join(' · ') : '';
   }
 
   function renderAll() {
@@ -547,8 +587,24 @@
   function bind() {
     $$('.tab').forEach((t) => t.addEventListener('click', () => switchTab(t.dataset.tab)));
     $$('[data-goto]').forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.goto)));
-    $('#filterMode').addEventListener('change', renderDashboard);
     $('#filterPeriod').addEventListener('change', renderDashboard);
+
+    // Barre latérale : composition (Solo/Duo/Trio/Squad/Tout)
+    $$('.side-btn').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        squadFilter = btn.dataset.squad;
+        $$('.side-btn').forEach((b) => b.classList.toggle('active', b === btn));
+        renderDashboard();
+      })
+    );
+    // Espaces par type de partie (Battle Royale, Arène, Reload…)
+    $$('.type-tab').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        typeFilter = btn.dataset.type;
+        $$('.type-tab').forEach((b) => b.classList.toggle('active', b === btn));
+        renderDashboard();
+      })
+    );
 
     // Objectifs hebdomadaires
     ['goalKills', 'goalMatches', 'goalWins', 'goalDamage'].forEach((id) => {
@@ -576,7 +632,8 @@
       const match = {
         id: 'm_' + Date.now() + '_' + Math.round(Math.random() * 1e6),
         date: fd.get('date'),
-        mode: fd.get('mode'),
+        gameType: fd.get('gameType') || 'Battle Royale',
+        squad: fd.get('squad') || 'Solo',
         kills: Number(fd.get('kills')) || 0,
         assists: Number(fd.get('assists')) || 0,
         placement: Number(fd.get('placement')) || 100,

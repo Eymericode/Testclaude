@@ -73,6 +73,20 @@ h2 { margin-top: 0; }
 .muted { color: var(--muted); font-size: 14px; }
 .hidden { display: none !important; }
 
+/* Layout tableau de bord : barre latérale + contenu */
+.dash-layout { display: flex; gap: 18px; align-items: flex-start; }
+.side { flex: 0 0 150px; display: flex; flex-direction: column; gap: 8px; position: sticky; top: 96px; }
+.side-title { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin: 0 0 4px; }
+.side-btn { text-align: left; background: var(--panel); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 700; cursor: pointer; transition: .15s; }
+.side-btn:hover { border-color: var(--accent); transform: translateX(2px); }
+.side-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: var(--shadow); }
+.dash-main { flex: 1; min-width: 0; }
+.type-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.type-tab { background: var(--panel); border: 1px solid var(--border); color: var(--muted); border-radius: 20px; padding: 7px 14px; font-size: 13px; font-weight: 700; cursor: pointer; transition: .15s; }
+.type-tab:hover { color: var(--text); }
+.type-tab.active { background: var(--accent2); border-color: var(--accent2); color: #06232a; }
+.filter-summary { color: var(--muted); font-size: 13px; align-self: center; }
+
 /* Filters */
 .filters { display: flex; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
 .filters label { color: var(--muted); font-size: 13px; display: flex; gap: 8px; align-items: center; }
@@ -222,4 +236,8 @@ code { background: var(--panel2); padding: 1px 5px; border-radius: 4px; font-siz
 @media (max-width: 720px) {
   .chart-grid { grid-template-columns: 1fr; }
   .grid2 { grid-template-columns: 1fr; }
+  .dash-layout { flex-direction: column; }
+  .side { flex: 1 1 auto; flex-direction: row; flex-wrap: wrap; position: static; width: 100%; }
+  .side-title { width: 100%; }
+  .side-btn { flex: 1 1 auto; text-align: center; }
 }

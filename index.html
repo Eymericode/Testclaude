@@ -41,31 +41,42 @@
   <main>
     <!-- ================= DASHBOARD ================= -->
     <section id="dashboard" class="panel active">
-      <div class="filters">
-        <label>Mode :
-          <select id="filterMode">
-            <option value="all">Tous</option>
-            <option value="Solo">Solo</option>
-            <option value="Duo">Duo</option>
-            <option value="Trio">Trio</option>
-            <option value="Squad">Squad</option>
-            <option value="Arena">Arena</option>
-            <option value="Autre">Autre</option>
-          </select>
-        </label>
-        <label>Période :
-          <select id="filterPeriod">
-            <option value="all">Toutes</option>
-            <option value="7">7 derniers jours</option>
-            <option value="30">30 derniers jours</option>
-            <option value="last20">20 derniers matchs</option>
-          </select>
-        </label>
-      </div>
+      <div class="dash-layout">
+        <aside class="side">
+          <h3 class="side-title">Composition</h3>
+          <button class="side-btn active" data-squad="all">🎯 Tout</button>
+          <button class="side-btn" data-squad="Solo">Solo</button>
+          <button class="side-btn" data-squad="Duo">Duo</button>
+          <button class="side-btn" data-squad="Trio">Trio</button>
+          <button class="side-btn" data-squad="Squad">Squad</button>
+        </aside>
 
-      <div id="statCards" class="cards"></div>
+        <div class="dash-main">
+          <div class="type-tabs" id="typeTabs">
+            <button class="type-tab active" data-type="all">Tout</button>
+            <button class="type-tab" data-type="Battle Royale">Battle Royale</button>
+            <button class="type-tab" data-type="Zéro Construction">Zéro Construction</button>
+            <button class="type-tab" data-type="Reload">Reload</button>
+            <button class="type-tab" data-type="Arène">Arène</button>
+            <button class="type-tab" data-type="Créatif">Créatif</button>
+            <button class="type-tab" data-type="Autre">Autre</button>
+          </div>
 
-      <div class="chart-grid">
+          <div class="filters">
+            <label>Période :
+              <select id="filterPeriod">
+                <option value="all">Toutes</option>
+                <option value="7">7 derniers jours</option>
+                <option value="30">30 derniers jours</option>
+                <option value="last20">20 dernières parties</option>
+              </select>
+            </label>
+            <span id="filterSummary" class="filter-summary"></span>
+          </div>
+
+          <div id="statCards" class="cards"></div>
+
+          <div class="chart-grid">
         <div class="chart-box">
           <h3>Kills par match (évolution)</h3>
           <canvas id="chartKills" height="220"></canvas>
@@ -75,7 +86,7 @@
           <canvas id="chartPlacement" height="220"></canvas>
         </div>
         <div class="chart-box">
-          <h3>Kills moyens par mode</h3>
+          <h3>Kills moyens par composition</h3>
           <canvas id="chartMode" height="220"></canvas>
         </div>
         <div class="chart-box">
@@ -84,10 +95,12 @@
         </div>
       </div>
 
-      <div id="emptyDashboard" class="empty hidden">
-        <p>🚀 Aucune partie enregistrée pour l'instant.</p>
-        <button class="btn primary" data-goto="add">Synchroniser mes parties Epic</button>
-      </div>
+          <div id="emptyDashboard" class="empty hidden">
+            <p>🚀 Aucune partie enregistrée pour l'instant.</p>
+            <button class="btn primary" data-goto="add">Synchroniser mes parties Epic</button>
+          </div>
+        </div><!-- /.dash-main -->
+      </div><!-- /.dash-layout -->
     </section>
 
     <!-- ================= LIVE ================= -->
@@ -161,14 +174,22 @@
           <label>Date
             <input type="date" name="date" required />
           </label>
-          <label>Mode
-            <select name="mode" required>
+          <label>Type de partie
+            <select name="gameType" required>
+              <option value="Battle Royale">Battle Royale</option>
+              <option value="Zéro Construction">Zéro Construction</option>
+              <option value="Reload">Reload</option>
+              <option value="Arène">Arène</option>
+              <option value="Créatif">Créatif</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </label>
+          <label>Composition
+            <select name="squad" required>
               <option value="Solo">Solo</option>
               <option value="Duo">Duo</option>
               <option value="Trio">Trio</option>
               <option value="Squad">Squad</option>
-              <option value="Arena">Arena</option>
-              <option value="Autre">Autre</option>
             </select>
           </label>
           <label>Kills
