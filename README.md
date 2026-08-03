@@ -9,6 +9,7 @@ Aucune installation, aucun serveur : tout tourne dans ton navigateur et tes donn
 - **Ajout de matchs** : mode, kills, assists, classement, dégâts, notes.
 - **Tableau de bord** : moyenne de kills/match, K/D, taux de victoire, Top 10 %, dégâts moyens, records.
 - **Graphiques** : évolution des kills et des dégâts, répartition des classements, kills moyens par mode.
+- **Suivi hebdomadaire 📅** : stats de la semaine en cours, **comparaison avec la semaine précédente** (deltas ▲/▼), **objectifs personnels** (kills/match, matchs, victoires, dégâts) avec barres de progression, et graphique semaine par semaine.
 - **Coach intégré 🧠** : analyse tes performances et te donne des conseils concrets (duels, rotation, placement, objectifs).
 - **Filtres** : par mode de jeu et par période (7 / 30 jours, 20 derniers matchs).
 - **Sauvegarde** : export / import de tes données en JSON.

@@ -140,6 +140,21 @@ hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
 .insight h4 { margin: 0 0 6px; font-size: 15px; }
 .insight p { margin: 0; font-size: 14px; color: #d5d8f5; }
 
+/* Deltas (comparaison hebdo) */
+.delta { font-size: 12px; font-weight: 700; margin-top: 4px; }
+.delta.up { color: var(--good); }
+.delta.down { color: var(--danger); }
+.delta.flat { color: var(--muted); }
+
+/* Objectifs hebdo */
+.goal-inputs { margin: 12px 0; }
+.goal { margin: 14px 0; }
+.goal-head { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; }
+.goal-head .done { color: var(--good); font-weight: 700; }
+.bar { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; height: 14px; overflow: hidden; }
+.bar > span { display: block; height: 100%; border-radius: 20px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .4s; }
+.bar > span.full { background: linear-gradient(90deg, var(--gold), #ffe066); }
+
 .foot { text-align: center; color: var(--muted); font-size: 12px; padding: 24px; }
 
 .api-stat { display:inline-block; background: var(--panel2); border:1px solid var(--border); border-radius:8px; padding:8px 12px; margin:4px; font-size:13px; }

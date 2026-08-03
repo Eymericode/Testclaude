@@ -3,7 +3,9 @@
   'use strict';
 
   const STORAGE_KEY = 'fortnite-tracker-matches';
+  const GOALS_KEY = 'fortnite-tracker-goals';
   let matches = load();
+  let goals = loadGoals();
 
   /* ---------- Stockage ---------- */
   function load() {
@@ -16,6 +18,17 @@
   }
   function save() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(matches));
+  }
+  function loadGoals() {
+    try {
+      const raw = localStorage.getItem(GOALS_KEY);
+      return raw ? JSON.parse(raw) : { kills: null, matches: null, wins: null, damage: null };
+    } catch (e) {
+      return { kills: null, matches: null, wins: null, damage: null };
+    }
+  }
+  function saveGoals() {
+    localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
   }
 
   /* ---------- Utilitaires ---------- */
@@ -30,6 +43,40 @@
     const lobby = Number(m.lobbySize) || 100;
     return Number(m.placement) <= Math.max(1, Math.round(lobby * 0.1));
   };
+
+  /* ---------- Semaines (ISO) ---------- */
+  function isoWeek(dateStr) {
+    const date = new Date(dateStr + 'T00:00:00');
+    date.setHours(0, 0, 0, 0);
+    // Jeudi de la semaine courante détermine l'année ISO
+    date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
+    const week1 = new Date(date.getFullYear(), 0, 4);
+    const week = 1 + Math.round(((date - week1) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+    return date.getFullYear() + '-W' + String(week).padStart(2, '0');
+  }
+  function weekRange(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    const day = (d.getDay() + 6) % 7; // 0 = lundi
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - day);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    return { monday, sunday };
+  }
+  function fmtDay(d) {
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  }
+  function currentWeekKey() {
+    return isoWeek(new Date().toISOString().slice(0, 10));
+  }
+  function groupByWeek() {
+    const groups = {};
+    matches.forEach((m) => {
+      const key = isoWeek(m.date);
+      (groups[key] = groups[key] || []).push(m);
+    });
+    return groups; // { '2026-W31': [matches...] }
+  }
 
   /* ---------- Filtrage ---------- */
   function filtered() {
@@ -272,6 +319,121 @@
       .join('');
   }
 
+  /* ---------- Rendu : suivi hebdomadaire ---------- */
+  function deltaHtml(cur, prev, opts = {}) {
+    if (prev == null) return '<div class="delta flat">—</div>';
+    const diff = round(cur - prev, opts.d != null ? opts.d : 2);
+    if (diff === 0) return '<div class="delta flat">= vs semaine dern.</div>';
+    const up = diff > 0;
+    const arrow = up ? '▲' : '▼';
+    const cls = up ? 'up' : 'down';
+    const sign = up ? '+' : '';
+    return `<div class="delta ${cls}">${arrow} ${sign}${diff}${opts.suffix || ''} vs sem. dern.</div>`;
+  }
+
+  function renderWeekly() {
+    const hasData = matches.length > 0;
+    $('#emptyWeekly').classList.toggle('hidden', hasData);
+    $('#weekCards').classList.toggle('hidden', !hasData);
+
+    const groups = groupByWeek();
+    const curKey = currentWeekKey();
+
+    // clés triées chronologiquement
+    const keys = Object.keys(groups).sort();
+    const curIdx = keys.indexOf(curKey);
+
+    // Stats de la semaine courante et de la précédente enregistrée
+    const curList = groups[curKey] || [];
+    const cur = curList.length ? computeStats(curList) : null;
+
+    // semaine précédente = dernière clé avant curKey qui existe
+    let prev = null;
+    const prevKeys = keys.filter((k) => k < curKey);
+    if (prevKeys.length) prev = computeStats(groups[prevKeys[prevKeys.length - 1]]);
+
+    // Libellé de la semaine
+    const range = weekRange(new Date().toISOString().slice(0, 10));
+    $('#weekLabel').textContent = `Semaine du ${fmtDay(range.monday)} au ${fmtDay(range.sunday)}`;
+
+    // Cartes
+    const c = cur || { n: 0, avgKills: 0, wins: 0, avgDamage: 0, winRate: 0 };
+    $('#weekCards').innerHTML = [
+      { label: 'Matchs joués', value: c.n, delta: deltaHtml(c.n, prev ? prev.n : null, { d: 0 }), cls: '' },
+      { label: 'Kills / match', value: c.avgKills, delta: deltaHtml(c.avgKills, prev ? prev.avgKills : null), cls: 'accent' },
+      { label: 'Victoires', value: c.wins, delta: deltaHtml(c.wins, prev ? prev.wins : null, { d: 0 }), cls: 'gold' },
+      { label: 'Dégâts / match', value: c.avgDamage, delta: deltaHtml(c.avgDamage, prev ? prev.avgDamage : null, { d: 0 }), cls: '' },
+    ]
+      .map(
+        (card) => `<div class="card ${card.cls}">
+          <div class="label">${card.label}</div>
+          <div class="value">${card.value}</div>
+          ${card.delta}
+        </div>`
+      )
+      .join('');
+
+    renderGoals(cur);
+    renderWeeklyChart(groups, keys);
+    renderWeekTable(groups, keys);
+  }
+
+  function renderGoals(cur) {
+    const box = $('#goalProgress');
+    const defined = ['kills', 'matches', 'wins', 'damage'].some((k) => goals[k] != null && goals[k] !== '');
+    if (!defined) {
+      box.innerHTML = '<p class="muted" style="margin-top:14px">Aucun objectif défini. Renseigne au moins une cible ci-dessus.</p>';
+      return;
+    }
+    const c = cur || { n: 0, avgKills: 0, wins: 0, avgDamage: 0 };
+    const rows = [];
+    const add = (goal, current, label, unit) => {
+      if (goal == null || goal === '' || Number(goal) <= 0) return;
+      const g = Number(goal);
+      const pct = Math.min(100, round((current / g) * 100, 0));
+      const done = current >= g;
+      rows.push(`<div class="goal">
+        <div class="goal-head">
+          <span>${label}</span>
+          <span class="${done ? 'done' : ''}">${round(current, unit === 'kills' ? 2 : 0)} / ${g}${done ? ' ✅' : ''}</span>
+        </div>
+        <div class="bar"><span class="${done ? 'full' : ''}" style="width:${pct}%"></span></div>
+      </div>`);
+    };
+    add(goals.kills, c.avgKills, '🎯 Kills / match', 'kills');
+    add(goals.matches, c.n, '🎮 Matchs joués', 'int');
+    add(goals.wins, c.wins, '👑 Victoires', 'int');
+    add(goals.damage, c.avgDamage, '💥 Dégâts / match', 'int');
+    box.innerHTML = rows.join('') || '';
+  }
+
+  function renderWeeklyChart(groups, keys) {
+    const last = keys.slice(-8);
+    const labels = last.map((k) => 'S' + k.split('-W')[1]);
+    const values = last.map((k) => computeStats(groups[k]).avgKills);
+    MiniChart.bar($('#chartWeekly'), { labels, values }, { color: '#00cec9' });
+  }
+
+  function renderWeekTable(groups, keys) {
+    const tbody = $('#weekTable tbody');
+    const rows = keys
+      .slice()
+      .reverse()
+      .map((k) => {
+        const s = computeStats(groups[k]);
+        const sample = groups[k][0];
+        const range = weekRange(sample.date);
+        return `<tr>
+          <td>${fmtDay(range.monday)} – ${fmtDay(range.sunday)}</td>
+          <td>${s.n}</td>
+          <td>${s.avgKills}</td>
+          <td>${s.wins}</td>
+          <td>${s.avgDamage}</td>
+        </tr>`;
+      });
+    tbody.innerHTML = rows.join('');
+  }
+
   /* ---------- Rendu global ---------- */
   function renderDashboard() {
     const list = filtered();
@@ -289,6 +451,7 @@
   function renderAll() {
     renderDashboard();
     renderTable();
+    renderWeekly();
     renderCoach();
   }
 
@@ -297,6 +460,7 @@
     $$('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
     $$('.panel').forEach((p) => p.classList.toggle('active', p.id === name));
     if (name === 'dashboard') renderDashboard();
+    if (name === 'weekly') renderWeekly();
     if (name === 'coach') renderCoach();
   }
 
@@ -306,6 +470,25 @@
     $$('[data-goto]').forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.goto)));
     $('#filterMode').addEventListener('change', renderDashboard);
     $('#filterPeriod').addEventListener('change', renderDashboard);
+
+    // Objectifs hebdomadaires
+    ['goalKills', 'goalMatches', 'goalWins', 'goalDamage'].forEach((id) => {
+      const key = id.replace('goal', '').toLowerCase();
+      const input = $('#' + id);
+      if (goals[key] != null) input.value = goals[key];
+    });
+    $('#saveGoals').addEventListener('click', () => {
+      goals = {
+        kills: valOrNull('#goalKills'),
+        matches: valOrNull('#goalMatches'),
+        wins: valOrNull('#goalWins'),
+        damage: valOrNull('#goalDamage'),
+      };
+      saveGoals();
+      renderWeekly();
+      $('#saveGoals').textContent = '✅ Objectifs enregistrés';
+      setTimeout(() => ($('#saveGoals').textContent = 'Enregistrer mes objectifs'), 1800);
+    });
 
     // Formulaire d'ajout
     $('#matchForm').addEventListener('submit', (e) => {
@@ -398,6 +581,11 @@
         result.innerHTML = `<div class="insight bad"><h4>Erreur</h4><p>${escapeHtml(err.message)}</p></div>`;
       }
     });
+  }
+
+  function valOrNull(sel) {
+    const v = $(sel).value.trim();
+    return v === '' ? null : Number(v);
   }
 
   function setDefaultDate() {

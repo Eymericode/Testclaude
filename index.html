@@ -20,6 +20,7 @@
       <button class="tab active" data-tab="dashboard">Tableau de bord</button>
       <button class="tab" data-tab="matches">Mes matchs</button>
       <button class="tab" data-tab="add">Ajouter</button>
+      <button class="tab" data-tab="weekly">Hebdo</button>
       <button class="tab" data-tab="coach">Coach</button>
       <button class="tab" data-tab="import">Données / API</button>
     </nav>
@@ -142,6 +143,56 @@
           <button type="reset" class="btn">Réinitialiser</button>
         </div>
       </form>
+    </section>
+
+    <!-- ================= WEEKLY ================= -->
+    <section id="weekly" class="panel">
+      <div class="section-head">
+        <h2>📅 Ma semaine</h2>
+        <span id="weekLabel" class="pill"></span>
+      </div>
+      <p class="muted">Compare tes performances d'une semaine à l'autre et fixe-toi des objectifs pour progresser régulièrement.</p>
+
+      <div id="weekCards" class="cards"></div>
+
+      <div class="box" style="margin-bottom:24px">
+        <h3>🎯 Mes objectifs de la semaine</h3>
+        <p class="muted">Fixe des cibles réalistes. La barre se remplit avec tes matchs de la semaine en cours.</p>
+        <div class="goal-inputs grid2">
+          <label>Kills / match visés
+            <input type="number" id="goalKills" min="0" step="0.5" placeholder="ex: 3" />
+          </label>
+          <label>Matchs à jouer
+            <input type="number" id="goalMatches" min="0" step="1" placeholder="ex: 20" />
+          </label>
+          <label>Victoires visées
+            <input type="number" id="goalWins" min="0" step="1" placeholder="ex: 2" />
+          </label>
+          <label>Dégâts / match visés
+            <input type="number" id="goalDamage" min="0" step="50" placeholder="ex: 500" />
+          </label>
+        </div>
+        <div class="form-actions">
+          <button id="saveGoals" class="btn primary">Enregistrer mes objectifs</button>
+        </div>
+        <div id="goalProgress"></div>
+      </div>
+
+      <div class="chart-box" style="margin-bottom:24px">
+        <h3>Kills moyens par semaine (8 dernières)</h3>
+        <canvas id="chartWeekly" height="220"></canvas>
+      </div>
+
+      <div class="table-wrap">
+        <table id="weekTable">
+          <thead>
+            <tr><th>Semaine</th><th>Matchs</th><th>Kills/match</th><th>Victoires</th><th>Dégâts/match</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div id="emptyWeekly" class="empty hidden"><p>Ajoute des matchs pour voir ton suivi hebdomadaire.</p></div>
     </section>
 
     <!-- ================= COACH ================= -->
