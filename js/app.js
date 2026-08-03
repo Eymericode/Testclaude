@@ -530,6 +530,75 @@
     tbody.innerHTML = rows.join('');
   }
 
+  /* ---------- Rangs (progression globale, tous modes confondus) ---------- */
+  const RANKS = [
+    { name: 'Recrue', emoji: '🥉', min: 0 },
+    { name: 'Combattant', emoji: '⚔️', min: 50 },
+    { name: 'Vétéran', emoji: '🛡️', min: 150 },
+    { name: 'Élite', emoji: '🎖️', min: 400 },
+    { name: 'As', emoji: '🃏', min: 800 },
+    { name: 'Maître', emoji: '🏆', min: 1500 },
+    { name: 'Champion', emoji: '👑', min: 3000 },
+    { name: 'Légende', emoji: '🌟', min: 6000 },
+    { name: 'Mythique', emoji: '🔥', min: 12000 },
+    { name: 'Immortel', emoji: '💎', min: 25000 },
+  ];
+  const WIN_BONUS = 15;
+
+  function rankScore(s) {
+    return Math.round((s.kills || 0) + (s.wins || 0) * WIN_BONUS);
+  }
+
+  function renderRanks() {
+    const box = $('#rankContent');
+    if (!box) return;
+    const s = computeStats(matches);
+    if (!s) {
+      box.innerHTML = `<div class="insight warn"><h4>Débloque ton rang</h4>
+        <p>Synchronise tes parties depuis Epic (onglet <strong>Synchro</strong>) ou ajoute des matchs pour découvrir ton rang et commencer à grimper l'échelle !</p></div>`;
+      return;
+    }
+
+    const score = rankScore(s);
+    let idx = 0;
+    for (let i = 0; i < RANKS.length; i++) if (score >= RANKS[i].min) idx = i;
+    const cur = RANKS[idx];
+    const next = RANKS[idx + 1] || null;
+
+    // Progression vers le rang suivant
+    let progressHtml;
+    if (next) {
+      const span = next.min - cur.min;
+      const pct = Math.max(0, Math.min(100, Math.round(((score - cur.min) / span) * 100)));
+      const remaining = next.min - score;
+      progressHtml = `<div class="rank-next">Plus que <strong>${remaining}</strong> points pour <strong>${next.emoji} ${next.name}</strong></div>
+        <div class="rank-bar"><span style="width:${pct}%"></span></div>`;
+    } else {
+      progressHtml = `<div class="rank-next">🎉 Rang maximum atteint — tu es une véritable légende vivante !</div>`;
+    }
+
+    const hero = `<div class="rank-hero">
+      <div class="rank-emoji">${cur.emoji}</div>
+      <div class="rank-name">${cur.name}</div>
+      <div class="rank-score">Score global : <b>${score}</b> pts — ${s.kills} kills + ${s.wins} victoire${s.wins > 1 ? 's' : ''} ×${WIN_BONUS}</div>
+      ${progressHtml}
+    </div>`;
+
+    const ladder = '<div class="ladder">' + RANKS.map((r, i) => {
+      let state = '<span class="ladder-state lock">🔒 verrouillé</span>';
+      let cls = 'locked';
+      if (i === idx) { state = '<span class="ladder-state cur">◈ rang actuel</span>'; cls = 'current'; }
+      else if (score >= r.min) { state = '<span class="ladder-state ok">✅ débloqué</span>'; cls = ''; }
+      return `<div class="ladder-item ${cls}">
+        <div class="ladder-emoji">${r.emoji}</div>
+        <div class="ladder-info"><div class="ln">${r.name}</div><div class="lt">${r.min} pts</div></div>
+        ${state}
+      </div>`;
+    }).join('') + '</div>';
+
+    box.innerHTML = hero + ladder;
+  }
+
   /* ---------- Rendu global ---------- */
   function renderDashboard() {
     const hasData = matches.length > 0;
@@ -565,6 +634,7 @@
     renderDashboard();
     renderTable();
     renderWeekly();
+    renderRanks();
     renderCoach();
   }
 
@@ -574,6 +644,7 @@
     $$('.panel').forEach((p) => p.classList.toggle('active', p.id === name));
     if (name === 'dashboard') renderDashboard();
     if (name === 'weekly') renderWeekly();
+    if (name === 'ranks') renderRanks();
     if (name === 'coach') renderCoach();
     if (name === 'live' && !liveLoaded && global.LiveData) {
       liveLoaded = true;

@@ -217,6 +217,35 @@ hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
 .live-loading { color: var(--muted); font-size: 14px; padding: 16px 0; }
 .live-error { border-left: 4px solid var(--danger); }
 
+/* Rangs */
+.rank-hero {
+  background: linear-gradient(150deg, var(--panel2), var(--panel));
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 24px; box-shadow: var(--shadow); text-align: center; margin-bottom: 20px;
+  position: relative; overflow: hidden;
+}
+.rank-hero::after { content: ''; position: absolute; inset: -40% 40% auto auto; width: 240px; height: 240px; background: radial-gradient(circle, rgba(108,92,231,.35), transparent 70%); pointer-events: none; }
+.rank-emoji { font-size: 66px; line-height: 1; }
+.rank-name { font-size: 30px; font-weight: 900; margin: 8px 0 2px; letter-spacing: .3px; }
+.rank-score { color: var(--muted); font-size: 14px; }
+.rank-score b { color: var(--accent2); }
+.rank-next { margin-top: 16px; font-size: 13px; color: var(--muted); }
+.rank-bar { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; height: 16px; overflow: hidden; margin-top: 8px; max-width: 460px; margin-left:auto; margin-right:auto; }
+.rank-bar > span { display: block; height: 100%; border-radius: 20px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .5s; }
+
+.ladder { display: flex; flex-direction: column; gap: 8px; }
+.ladder-item { display: flex; align-items: center; gap: 14px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; }
+.ladder-item.current { border-color: var(--accent2); box-shadow: 0 0 0 1px var(--accent2) inset; }
+.ladder-item.locked { opacity: .5; }
+.ladder-emoji { font-size: 26px; width: 34px; text-align: center; }
+.ladder-info { flex: 1; }
+.ladder-info .ln { font-weight: 800; }
+.ladder-info .lt { font-size: 12px; color: var(--muted); }
+.ladder-state { font-size: 13px; font-weight: 700; }
+.ladder-state.ok { color: var(--good); }
+.ladder-state.cur { color: var(--accent2); }
+.ladder-state.lock { color: var(--muted); }
+
 .foot { text-align: center; color: var(--muted); font-size: 12px; padding: 24px; }
 
 .api-stat { display:inline-block; background: var(--panel2); border:1px solid var(--border); border-radius:8px; padding:8px 12px; margin:4px; font-size:13px; }
