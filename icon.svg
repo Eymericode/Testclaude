@@ -1,37 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
   <defs>
-    <linearGradient id="badge" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#6c5ce7"/>
-      <stop offset="0.55" stop-color="#a55eff"/>
-      <stop offset="1" stop-color="#ffd43b"/>
+      <stop offset="1" stop-color="#00cec9"/>
     </linearGradient>
-    <linearGradient id="star" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffe066"/>
-      <stop offset="1" stop-color="#ffb703"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="0.5" cy="0.42" r="0.6">
-      <stop offset="0" stop-color="#a55eff" stop-opacity="0.55"/>
-      <stop offset="1" stop-color="#a55eff" stop-opacity="0"/>
+    <radialGradient id="core" cx="0.5" cy="0.5" r="0.6">
+      <stop offset="0" stop-color="#00cec9"/>
+      <stop offset="1" stop-color="#6c5ce7"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.6">
+      <stop offset="0" stop-color="#00cec9" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#00cec9" stop-opacity="0"/>
     </radialGradient>
   </defs>
 
   <!-- Fond -->
   <rect width="192" height="192" rx="42" fill="#0e1020"/>
-  <rect x="10" y="10" width="172" height="172" rx="34" fill="url(#glow)"/>
+  <circle cx="96" cy="96" r="72" fill="url(#halo)"/>
 
-  <!-- Couronne -->
-  <path d="M66 58 L66 44 L80 53 L96 34 L112 53 L126 44 L126 58 Z"
-        fill="url(#badge)" stroke="#ffd43b" stroke-width="2" stroke-linejoin="round"/>
-  <circle cx="66" cy="42" r="4" fill="#ffd43b"/>
-  <circle cx="96" cy="32" r="4.5" fill="#ffd43b"/>
-  <circle cx="126" cy="42" r="4" fill="#ffd43b"/>
+  <!-- Hexagone extérieur -->
+  <path d="M96 40 L144.5 68 L144.5 124 L96 152 L47.5 124 L47.5 68 Z"
+        fill="none" stroke="url(#edge)" stroke-width="6" stroke-linejoin="round"/>
 
-  <!-- Écusson -->
-  <path d="M96 62 L138 74 L138 108 Q138 140 96 160 Q54 140 54 108 L54 74 Z"
-        fill="url(#badge)" fill-opacity="0.18"
-        stroke="url(#badge)" stroke-width="5" stroke-linejoin="round"/>
+  <!-- Hexagone intérieur -->
+  <path d="M96 62 L125.4 79 L125.4 113 L96 130 L66.6 113 L66.6 79 Z"
+        fill="url(#edge)" fill-opacity="0.14"
+        stroke="url(#edge)" stroke-width="2.5" stroke-linejoin="round"/>
 
-  <!-- Étoile centrale -->
-  <path d="M96 78 L102.6 96.3 L122 97 L106.5 108.9 L112 128 L96 116.5 L80 128 L85.5 108.9 L70 97 L89.4 96.3 Z"
-        fill="url(#star)" stroke="#fff3c4" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Nœuds aux sommets -->
+  <circle cx="96" cy="40" r="4.5" fill="#00cec9"/>
+  <circle cx="144.5" cy="68" r="4.5" fill="#6c5ce7"/>
+  <circle cx="144.5" cy="124" r="4.5" fill="#00cec9"/>
+  <circle cx="96" cy="152" r="4.5" fill="#6c5ce7"/>
+  <circle cx="47.5" cy="124" r="4.5" fill="#00cec9"/>
+  <circle cx="47.5" cy="68" r="4.5" fill="#6c5ce7"/>
+
+  <!-- Cœur lumineux (étincelle 4 branches) -->
+  <path d="M96 66 L104 88 L126 96 L104 104 L96 126 L88 104 L66 96 L88 88 Z"
+        fill="url(#core)" stroke="#d9fff9" stroke-width="1.5" stroke-linejoin="round"/>
+  <circle cx="96" cy="96" r="5" fill="#eafffb"/>
 </svg>
