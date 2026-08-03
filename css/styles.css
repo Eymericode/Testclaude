@@ -170,6 +170,24 @@ hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
 .status-line.on { border-left: 4px solid var(--good); }
 .status-line.off { border-left: 4px solid var(--muted); }
 
+/* En direct */
+.live-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 12px 0; }
+.live-card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; display: flex; flex-direction: column;
+}
+.live-card img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; background: var(--bg); }
+.live-card .body { padding: 10px 12px; }
+.live-card .name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.live-card .price { font-size: 13px; color: var(--gold); font-weight: 700; }
+.live-card .rarity { font-size: 11px; color: var(--muted); text-transform: uppercase; }
+.news-card { grid-column: span 1; }
+.news-card img { aspect-ratio: 16 / 9; }
+.poi-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.poi { background: var(--panel2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 12px; font-size: 13px; }
+.live-loading { color: var(--muted); font-size: 14px; padding: 16px 0; }
+.live-error { border-left: 4px solid var(--danger); }
+
 .foot { text-align: center; color: var(--muted); font-size: 12px; padding: 24px; }
 
 .api-stat { display:inline-block; background: var(--panel2); border:1px solid var(--border); border-radius:8px; padding:8px 12px; margin:4px; font-size:13px; }

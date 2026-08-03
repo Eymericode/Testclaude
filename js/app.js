@@ -462,7 +462,13 @@
     if (name === 'dashboard') renderDashboard();
     if (name === 'weekly') renderWeekly();
     if (name === 'coach') renderCoach();
+    if (name === 'live' && !liveLoaded && global.LiveData) {
+      liveLoaded = true;
+      global.LiveData.refresh();
+    }
   }
+  let liveLoaded = false;
+  const global = window;
 
   /* ---------- Événements ---------- */
   function bind() {
@@ -554,14 +560,21 @@
       }
     });
 
+    // Pré-remplit la clé API mémorisée (partagée avec l'onglet "En direct")
+    const storedKey = localStorage.getItem('fortnite-tracker-apikey');
+    if (storedKey && $('#apiKey')) $('#apiKey').value = storedKey;
+
     // API Fortnite
     $('#apiForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const result = $('#apiResult');
+      const apiKey = $('#apiKey').value.trim();
+      // Mémorise la clé pour l'onglet "En direct" (boutique)
+      if (apiKey) localStorage.setItem('fortnite-tracker-apikey', apiKey);
       result.innerHTML = '<p class="muted">Chargement…</p>';
       try {
         const stats = await FortniteAPI.fetchStats({
-          apiKey: $('#apiKey').value.trim(),
+          apiKey: apiKey,
           name: $('#apiName').value.trim(),
           platform: $('#apiPlatform').value,
         });
