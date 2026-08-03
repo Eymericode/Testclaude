@@ -27,10 +27,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configuration de GitHub Pages
+        # Prérequis : activer Pages une fois dans Settings → Pages → Source : GitHub Actions.
         uses: actions/configure-pages@v5
-        with:
-          # Le dépôt est public : on tente d'activer Pages automatiquement.
-          enablement: true
 
       - name: Envoi du site (racine du dépôt)
         uses: actions/upload-pages-artifact@v3
