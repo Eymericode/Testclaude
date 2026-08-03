@@ -1,4 +1,4 @@
-/* Fortnite Stats Tracker — logique principale. */
+/* Your Fortnite tracker — logique principale. */
 (function () {
   'use strict';
 

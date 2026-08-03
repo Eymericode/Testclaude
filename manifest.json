@@ -1,6 +1,6 @@
 {
-  "name": "Fortnite Stats Tracker",
-  "short_name": "FN Stats",
+  "name": "Your Fortnite tracker",
+  "short_name": "Your FN Tracker",
   "description": "Suivi de tes statistiques Fortnite et conseils pour progresser.",
   "start_url": "./index.html",
   "scope": "./",

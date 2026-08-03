@@ -1,4 +1,4 @@
-# 🎯 Fortnite Stats Tracker
+# 🎯 Your Fortnite tracker
 
 Une application web simple pour **suivre tes statistiques Fortnite** (kills moyens, K/D, taux de Victory Royale, dégâts…) et **recevoir des conseils personnalisés pour progresser**.
 

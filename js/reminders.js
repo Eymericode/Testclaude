@@ -65,7 +65,7 @@
   }
 
   function fire() {
-    const title = '🎯 Fortnite Stats Tracker';
+    const title = '🎯 Your Fortnite tracker';
     const body = settings.message && settings.message.trim()
       ? settings.message.trim()
       : "C'est ton jour de jeu ! Pense à noter tes matchs et à viser ton objectif de la semaine 💪";
@@ -162,7 +162,7 @@
     if (perm !== 'granted') perm = await Notification.requestPermission();
     if (perm !== 'granted') { renderStatus(); return; }
     await registerSW();
-    await showNotif('🎯 Test — Fortnite Stats Tracker', {
+    await showNotif('🎯 Test — Your Fortnite tracker', {
       body: 'Parfait, les notifications fonctionnent ! 🎮',
       icon: 'icon.svg',
       tag: 'fn-test',
