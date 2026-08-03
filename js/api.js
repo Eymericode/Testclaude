@@ -3,7 +3,7 @@
    un compte Epic dont les stats sont publiques (Paramètres Epic → Confidentialité). */
 (function (global) {
   const STATS = 'https://fortnite-api.com/v2/stats/br/v2';
-  const SHOP = 'https://fortnite-api.com/v2/shop/br';
+  const SHOP = 'https://fortnite-api.com/v2/shop'; // /v2/shop/br était déprécié (410)
 
   /* Requête générique avec gestion fine des erreurs (réseau, CORS, HTTP, message de l'API). */
   async function request(url, apiKey) {

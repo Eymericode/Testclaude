@@ -40,7 +40,7 @@
       e.code = 'NO_KEY';
       throw e;
     }
-    const json = await getJSON(`https://fortnite-api.com/v2/shop/br?language=${LANG}`, { Authorization: key });
+    const json = await getJSON(`https://fortnite-api.com/v2/shop?language=${LANG}`, { Authorization: key });
     const data = json.data || {};
     // Structure défensive : selon la version, les entrées sont regroupées différemment.
     let entries = data.entries || [];
