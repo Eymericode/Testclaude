@@ -1,22 +1,61 @@
 /* Intégration optionnelle avec l'API publique fortnite-api.com.
-   Nécessite une clé gratuite (https://dash.fortnite-api.com) et un compte Epic
-   dont les stats sont publiques (Paramètres Epic → Confidentialité). */
+   Nécessite une clé gratuite (https://dash.fortnite-api.com) et, pour les stats,
+   un compte Epic dont les stats sont publiques (Paramètres Epic → Confidentialité). */
 (function (global) {
-  const BASE = 'https://fortnite-api.com/v2/stats/br/v2';
+  const STATS = 'https://fortnite-api.com/v2/stats/br/v2';
+  const SHOP = 'https://fortnite-api.com/v2/shop/br';
 
+  /* Requête générique avec gestion fine des erreurs (réseau, CORS, HTTP, message de l'API). */
+  async function request(url, apiKey) {
+    let res;
+    try {
+      res = await fetch(url, apiKey ? { headers: { Authorization: apiKey } } : undefined);
+    } catch (e) {
+      // Échec avant même une réponse HTTP = pas de réseau ou blocage CORS du navigateur.
+      throw new Error(
+        "Impossible de joindre l'API (pas de connexion internet, ou requête bloquée par le navigateur). " +
+        "Ce n'est pas forcément ta clé — réessaie avec une bonne connexion."
+      );
+    }
+
+    let json = null;
+    try { json = await res.json(); } catch (e) { /* corps non-JSON */ }
+    const apiMsg = json && (json.error || json.message);
+
+    if (res.ok) return json;
+
+    if (res.status === 401 || res.status === 403) {
+      throw new Error('Clé API invalide ou non autorisée' + (apiMsg ? ' — ' + apiMsg : '') + '.');
+    }
+    if (res.status === 404) {
+      throw new Error(apiMsg || 'Joueur introuvable ou stats privées. Rends tes stats publiques (Paramètres Epic → Confidentialité).');
+    }
+    if (res.status === 429) {
+      throw new Error('Trop de requêtes (limite de l\'API atteinte). Réessaie dans une minute.');
+    }
+    throw new Error('Erreur API ' + res.status + (apiMsg ? ' — ' + apiMsg : '') + '.');
+  }
+
+  /* Valide UNIQUEMENT la clé (endpoint boutique : nécessite la clé, pas de pseudo). */
+  async function testKey(apiKey) {
+    if (!apiKey) throw new Error('Clé API manquante.');
+    await request(SHOP + '?language=fr', apiKey);
+    return true;
+  }
+
+  /* Récupère les stats d'un joueur (nécessite clé + pseudo + stats publiques). */
   async function fetchStats({ apiKey, name, platform }) {
     if (!apiKey) throw new Error('Clé API manquante.');
     if (!name) throw new Error('Pseudo Epic manquant.');
 
-    const url = `${BASE}?name=${encodeURIComponent(name)}&accountType=${encodeURIComponent(platform || 'epic')}`;
-    const res = await fetch(url, { headers: { Authorization: apiKey } });
+    const url = STATS + '?name=' + encodeURIComponent(name) + '&accountType=' + encodeURIComponent(platform || 'epic');
+    const json = await request(url, apiKey);
+    const data = (json && json.data) || {};
 
-    if (res.status === 401 || res.status === 403) throw new Error('Clé API invalide ou non autorisée.');
-    if (res.status === 404) throw new Error("Joueur introuvable ou stats privées. Rends tes stats publiques dans les paramètres Epic.");
-    if (!res.ok) throw new Error(`Erreur API (${res.status}).`);
-
-    const json = await res.json();
-    return normalize(json.data);
+    if (!data.stats || !data.stats.all || !data.stats.all.overall) {
+      throw new Error('Compte trouvé, mais aucune statistique disponible (elles sont probablement privées). Active les stats publiques côté Epic.');
+    }
+    return normalize(data);
   }
 
   /* Transforme la réponse de l'API en un résumé simple. */
@@ -39,5 +78,5 @@
     };
   }
 
-  global.FortniteAPI = { fetchStats };
+  global.FortniteAPI = { fetchStats, testKey };
 })(window);

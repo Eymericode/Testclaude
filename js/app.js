@@ -662,6 +662,26 @@
       });
     }
 
+    // Tester la clé seule (endpoint boutique — pas besoin du pseudo)
+    if ($('#testKey')) {
+      $('#testKey').addEventListener('click', async () => {
+        const key = ($('#apiKey').value || '').trim();
+        const out = $('#testKeyResult');
+        if (!key) { out.className = 'key-test ko'; out.textContent = 'Renseigne d\'abord ta clé.'; return; }
+        localStorage.setItem('fortnite-tracker-apikey', key);
+        out.className = 'key-test pending';
+        out.textContent = '⏳ Test en cours…';
+        try {
+          await FortniteAPI.testKey(key);
+          out.className = 'key-test ok';
+          out.textContent = '✅ Clé valide ! Si les stats ne remontent pas, c\'est ton pseudo ou tes stats privées, pas la clé.';
+        } catch (err) {
+          out.className = 'key-test ko';
+          out.textContent = '❌ ' + err.message;
+        }
+      });
+    }
+
     // Pré-remplit la clé API et le pseudo mémorisés (partagés avec "En direct" et "Synchro")
     const storedKey = localStorage.getItem('fortnite-tracker-apikey');
     if (storedKey && $('#apiKey')) $('#apiKey').value = storedKey;

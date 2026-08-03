@@ -210,6 +210,10 @@ hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
 .inline-check { flex-direction: row !important; align-items: center; gap: 6px; margin: 0 !important; color: var(--text) !important; font-size: 13px; cursor: pointer; }
 .inline-check input { width: auto; }
 .key-btn { padding: 6px 12px; font-size: 13px; font-weight: 600; }
+.key-test { display: block; margin-top: 8px; font-size: 13px; font-weight: 600; }
+.key-test.ok { color: var(--good); }
+.key-test.ko { color: var(--danger); }
+.key-test.pending { color: var(--muted); }
 #apiKey[type="text"] { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; letter-spacing: .5px; }
 .api-stat b { color: var(--accent2); }
 
