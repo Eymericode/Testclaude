@@ -36,6 +36,7 @@ a { color: var(--accent2); }
 }
 .brand { display: flex; align-items: center; gap: 14px; }
 .brand .logo { font-size: 34px; }
+.brand img.logo { border-radius: 10px; display: block; box-shadow: 0 2px 10px rgba(108,92,231,.4); }
 .install-btn { margin-left: auto; background: var(--accent2); border-color: var(--accent2); color: #06232a; white-space: nowrap; }
 .install-btn:hover { filter: brightness(1.08); }
 
