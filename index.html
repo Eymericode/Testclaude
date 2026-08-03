@@ -329,7 +329,11 @@
       <form id="apiForm" class="form">
         <div class="grid2">
           <label>Clé API
-            <input type="password" id="apiKey" placeholder="Colle ta clé fortnite-api.com" />
+            <input type="password" id="apiKey" placeholder="Colle ta clé fortnite-api.com" autocomplete="off" />
+            <span class="key-actions">
+              <label class="inline-check"><input type="checkbox" id="toggleKey" /> Afficher ma clé</label>
+              <button type="button" class="btn key-btn" id="copyKey">📋 Copier</button>
+            </span>
           </label>
           <label>Pseudo Epic
             <input type="text" id="apiName" placeholder="Ton nom d'affichage Epic" />

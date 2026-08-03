@@ -636,6 +636,32 @@
     // Synchronisation automatique
     if ($('#syncBtn')) $('#syncBtn').addEventListener('click', doSync);
 
+    // Afficher / masquer la clé API
+    if ($('#toggleKey')) {
+      $('#toggleKey').addEventListener('change', (e) => {
+        $('#apiKey').type = e.target.checked ? 'text' : 'password';
+      });
+    }
+    // Copier la clé API
+    if ($('#copyKey')) {
+      $('#copyKey').addEventListener('click', async () => {
+        const val = ($('#apiKey').value || '').trim();
+        const btn = $('#copyKey');
+        if (!val) { btn.textContent = 'Aucune clé'; setTimeout(() => (btn.textContent = '📋 Copier'), 1500); return; }
+        try {
+          await navigator.clipboard.writeText(val);
+          btn.textContent = '✅ Copiée';
+        } catch (err) {
+          // Repli si le presse-papiers est indisponible : sélectionne le texte
+          $('#apiKey').type = 'text';
+          $('#apiKey').select();
+          if ($('#toggleKey')) $('#toggleKey').checked = true;
+          btn.textContent = 'Sélectionnée';
+        }
+        setTimeout(() => (btn.textContent = '📋 Copier'), 1500);
+      });
+    }
+
     // Pré-remplit la clé API et le pseudo mémorisés (partagés avec "En direct" et "Synchro")
     const storedKey = localStorage.getItem('fortnite-tracker-apikey');
     if (storedKey && $('#apiKey')) $('#apiKey').value = storedKey;

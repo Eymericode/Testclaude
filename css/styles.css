@@ -206,6 +206,11 @@ hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
 .foot { text-align: center; color: var(--muted); font-size: 12px; padding: 24px; }
 
 .api-stat { display:inline-block; background: var(--panel2); border:1px solid var(--border); border-radius:8px; padding:8px 12px; margin:4px; font-size:13px; }
+.key-actions { display: flex; align-items: center; gap: 14px; margin-top: 8px; flex-wrap: wrap; }
+.inline-check { flex-direction: row !important; align-items: center; gap: 6px; margin: 0 !important; color: var(--text) !important; font-size: 13px; cursor: pointer; }
+.inline-check input { width: auto; }
+.key-btn { padding: 6px 12px; font-size: 13px; font-weight: 600; }
+#apiKey[type="text"] { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; letter-spacing: .5px; }
 .api-stat b { color: var(--accent2); }
 
 @media (max-width: 720px) {
