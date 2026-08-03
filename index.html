@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fortnite Stats Tracker — Progresse à chaque match</title>
+  <meta name="description" content="Suivi de tes statistiques Fortnite : kills moyens, K/D, taux de victoire, et conseils personnalisés pour t'améliorer." />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">🎯</span>
+      <div>
+        <h1>Fortnite Stats Tracker</h1>
+        <p class="tagline">Suis tes stats, repère tes faiblesses, deviens meilleur·e</p>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button class="tab active" data-tab="dashboard">Tableau de bord</button>
+      <button class="tab" data-tab="matches">Mes matchs</button>
+      <button class="tab" data-tab="add">Ajouter</button>
+      <button class="tab" data-tab="coach">Coach</button>
+      <button class="tab" data-tab="import">Données / API</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ================= DASHBOARD ================= -->
+    <section id="dashboard" class="panel active">
+      <div class="filters">
+        <label>Mode :
+          <select id="filterMode">
+            <option value="all">Tous</option>
+            <option value="Solo">Solo</option>
+            <option value="Duo">Duo</option>
+            <option value="Trio">Trio</option>
+            <option value="Squad">Squad</option>
+            <option value="Arena">Arena</option>
+            <option value="Autre">Autre</option>
+          </select>
+        </label>
+        <label>Période :
+          <select id="filterPeriod">
+            <option value="all">Toutes</option>
+            <option value="7">7 derniers jours</option>
+            <option value="30">30 derniers jours</option>
+            <option value="last20">20 derniers matchs</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="statCards" class="cards"></div>
+
+      <div class="chart-grid">
+        <div class="chart-box">
+          <h3>Kills par match (évolution)</h3>
+          <canvas id="chartKills" height="220"></canvas>
+        </div>
+        <div class="chart-box">
+          <h3>Répartition des classements</h3>
+          <canvas id="chartPlacement" height="220"></canvas>
+        </div>
+        <div class="chart-box">
+          <h3>Kills moyens par mode</h3>
+          <canvas id="chartMode" height="220"></canvas>
+        </div>
+        <div class="chart-box">
+          <h3>Dégâts par match (évolution)</h3>
+          <canvas id="chartDamage" height="220"></canvas>
+        </div>
+      </div>
+
+      <div id="emptyDashboard" class="empty hidden">
+        <p>🚀 Aucun match enregistré pour l'instant.</p>
+        <button class="btn primary" data-goto="add">Ajouter mon premier match</button>
+      </div>
+    </section>
+
+    <!-- ================= MATCHES ================= -->
+    <section id="matches" class="panel">
+      <div class="section-head">
+        <h2>Historique des matchs</h2>
+        <span id="matchCount" class="pill"></span>
+      </div>
+      <div class="table-wrap">
+        <table id="matchTable">
+          <thead>
+            <tr>
+              <th>Date</th><th>Mode</th><th>Kills</th><th>Assists</th>
+              <th>Classement</th><th>Dégâts</th><th>Résultat</th><th>Notes</th><th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="emptyMatches" class="empty hidden"><p>Aucun match. Ajoute ton premier match !</p></div>
+    </section>
+
+    <!-- ================= ADD ================= -->
+    <section id="add" class="panel">
+      <h2>Ajouter un match</h2>
+      <form id="matchForm" class="form">
+        <div class="grid2">
+          <label>Date
+            <input type="date" name="date" required />
+          </label>
+          <label>Mode
+            <select name="mode" required>
+              <option value="Solo">Solo</option>
+              <option value="Duo">Duo</option>
+              <option value="Trio">Trio</option>
+              <option value="Squad">Squad</option>
+              <option value="Arena">Arena</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </label>
+          <label>Kills
+            <input type="number" name="kills" min="0" step="1" value="0" required />
+          </label>
+          <label>Assists
+            <input type="number" name="assists" min="0" step="1" value="0" />
+          </label>
+          <label>Classement (place finale)
+            <input type="number" name="placement" min="1" step="1" placeholder="ex: 1 = Victory Royale" required />
+          </label>
+          <label>Joueurs dans la partie
+            <input type="number" name="lobbySize" min="1" step="1" value="100" />
+          </label>
+          <label>Dégâts infligés
+            <input type="number" name="damage" min="0" step="1" value="0" />
+          </label>
+          <label>Précision (%) — optionnel
+            <input type="number" name="accuracy" min="0" max="100" step="0.1" placeholder="ex: 32.5" />
+          </label>
+        </div>
+        <label>Notes (arme préférée, erreur commise, atterrissage…)
+          <textarea name="notes" rows="2" placeholder="Ex: mort en zone 3, mauvaise gestion du mat"></textarea>
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="btn primary">Enregistrer le match</button>
+          <button type="reset" class="btn">Réinitialiser</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ================= COACH ================= -->
+    <section id="coach" class="panel">
+      <h2>🧠 Ton coach personnel</h2>
+      <p class="muted">Analyse basée sur tes matchs enregistrés. Plus tu ajoutes de matchs, plus les conseils sont pertinents.</p>
+      <div id="coachContent"></div>
+    </section>
+
+    <!-- ================= IMPORT / API ================= -->
+    <section id="import" class="panel">
+      <h2>Données & sauvegarde</h2>
+      <div class="cards-inline">
+        <div class="box">
+          <h3>Exporter</h3>
+          <p class="muted">Télécharge une sauvegarde de tous tes matchs (JSON).</p>
+          <button id="exportBtn" class="btn">⬇️ Exporter mes données</button>
+        </div>
+        <div class="box">
+          <h3>Importer</h3>
+          <p class="muted">Restaure une sauvegarde précédente.</p>
+          <input type="file" id="importFile" accept="application/json" />
+        </div>
+        <div class="box danger">
+          <h3>Réinitialiser</h3>
+          <p class="muted">Supprime tous les matchs. Irréversible.</p>
+          <button id="resetBtn" class="btn danger">🗑️ Tout supprimer</button>
+        </div>
+      </div>
+
+      <hr />
+
+      <h2>Connexion API Epic / Fortnite (optionnel)</h2>
+      <p class="muted">
+        Récupère automatiquement tes stats depuis l'API publique
+        <a href="https://fortnite-api.com" target="_blank" rel="noopener">fortnite-api.com</a>.
+        Il te faut une clé gratuite (crée un compte sur le site) et ton compte Epic doit avoir
+        les statistiques <strong>publiques</strong> (Paramètres Epic → Confidentialité).
+      </p>
+      <form id="apiForm" class="form">
+        <div class="grid2">
+          <label>Clé API
+            <input type="password" id="apiKey" placeholder="Colle ta clé fortnite-api.com" />
+          </label>
+          <label>Pseudo Epic
+            <input type="text" id="apiName" placeholder="Ton nom d'affichage Epic" />
+          </label>
+          <label>Plateforme
+            <select id="apiPlatform">
+              <option value="epic">PC / Epic</option>
+              <option value="psn">PlayStation</option>
+              <option value="xbl">Xbox</option>
+            </select>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn primary">Récupérer mes stats Epic</button>
+        </div>
+      </form>
+      <div id="apiResult"></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>Tes données sont stockées uniquement dans ton navigateur (localStorage). Rien n'est envoyé sur un serveur, sauf si tu utilises l'API.</p>
+  </footer>
+
+  <script src="js/charts.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
