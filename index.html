@@ -30,7 +30,7 @@
       <button class="tab active" data-tab="dashboard">Tableau de bord</button>
       <button class="tab" data-tab="live">En direct</button>
       <button class="tab" data-tab="matches">Mes matchs</button>
-      <button class="tab" data-tab="add">Ajouter</button>
+      <button class="tab" data-tab="add">Synchro</button>
       <button class="tab" data-tab="weekly">Hebdo</button>
       <button class="tab" data-tab="reminders">Rappels</button>
       <button class="tab" data-tab="coach">Coach</button>
@@ -85,8 +85,8 @@
       </div>
 
       <div id="emptyDashboard" class="empty hidden">
-        <p>🚀 Aucun match enregistré pour l'instant.</p>
-        <button class="btn primary" data-goto="add">Ajouter mon premier match</button>
+        <p>🚀 Aucune partie enregistrée pour l'instant.</p>
+        <button class="btn primary" data-goto="add">Synchroniser mes parties Epic</button>
       </div>
     </section>
 
@@ -129,13 +129,34 @@
           <tbody></tbody>
         </table>
       </div>
-      <div id="emptyMatches" class="empty hidden"><p>Aucun match. Ajoute ton premier match !</p></div>
+      <div id="emptyMatches" class="empty hidden"><p>Aucune partie. Synchronise depuis Epic (onglet Synchro) !</p></div>
     </section>
 
-    <!-- ================= ADD ================= -->
+    <!-- ================= ADD (SYNC) ================= -->
     <section id="add" class="panel">
-      <h2>Ajouter un match</h2>
-      <form id="matchForm" class="form">
+      <h2>🔄 Synchroniser mes parties</h2>
+      <p class="muted">L'app récupère automatiquement les parties jouées depuis ton compte Epic — aucune saisie manuelle.
+        Clique une première fois pour enregistrer ton point de départ, puis reviens après avoir joué : tes nouvelles parties s'ajoutent toutes seules.</p>
+
+      <div id="syncNeedsConfig" class="insight warn hidden">
+        <h4>🔑 Configure ton compte Epic d'abord</h4>
+        <p>Renseigne ta clé API et ton pseudo Epic dans l'onglet <strong>Données / API</strong> (une seule fois).
+        <button class="btn" data-goto="import" style="margin-top:8px">Aller à Données / API</button></p>
+      </div>
+
+      <div class="form-actions">
+        <button id="syncBtn" class="btn primary">🔄 Synchroniser depuis Epic</button>
+      </div>
+      <div id="syncStatus" style="margin-top:14px"></div>
+
+      <p class="muted" style="margin-top:18px; font-size:13px">
+        ℹ️ Epic ne fournit pas le détail de chaque partie, seulement tes totaux. La synchro enregistre donc
+        l'ensemble des parties jouées <em>depuis la dernière synchro</em> (nombre de parties, kills, victoires, classements).
+      </p>
+
+      <details style="margin-top:20px">
+        <summary style="cursor:pointer; color:var(--muted)">➕ Ajouter une partie manuellement (optionnel)</summary>
+        <form id="matchForm" class="form" style="margin-top:16px">
         <div class="grid2">
           <label>Date
             <input type="date" name="date" required />
@@ -177,6 +198,7 @@
           <button type="reset" class="btn">Réinitialiser</button>
         </div>
       </form>
+      </details>
     </section>
 
     <!-- ================= WEEKLY ================= -->

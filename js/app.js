@@ -31,6 +31,23 @@
     localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
   }
 
+  /* Config Epic (clé API + pseudo) et point de départ de la synchro */
+  const APIKEY_KEY = 'fortnite-tracker-apikey';
+  const EPIC_KEY = 'fortnite-tracker-epic';
+  const BASELINE_KEY = 'fortnite-tracker-baseline';
+  function getEpicConfig() {
+    const key = (localStorage.getItem(APIKEY_KEY) || '').trim();
+    let epic = {};
+    try { epic = JSON.parse(localStorage.getItem(EPIC_KEY) || '{}'); } catch (e) { epic = {}; }
+    return { key, name: (epic.name || '').trim(), platform: epic.platform || 'epic' };
+  }
+  function getBaseline() {
+    try { return JSON.parse(localStorage.getItem(BASELINE_KEY) || 'null'); } catch (e) { return null; }
+  }
+  function setBaseline(snap) {
+    localStorage.setItem(BASELINE_KEY, JSON.stringify(snap));
+  }
+
   /* ---------- Utilitaires ---------- */
   const $ = (sel, el = document) => el.querySelector(sel);
   const $$ = (sel, el = document) => Array.from(el.querySelectorAll(sel));
@@ -43,6 +60,29 @@
     const lobby = Number(m.lobbySize) || 100;
     return Number(m.placement) <= Math.max(1, Math.round(lobby * 0.1));
   };
+
+  /* Normalise une entrée (match manuel OU session Epic synchronisée) en agrégats. */
+  function norm(m) {
+    if (m.source === 'epic') {
+      return {
+        matches: Number(m.matches) || 0,
+        kills: Number(m.kills) || 0,
+        wins: Number(m.wins) || 0,
+        tops: Number(m.top10) || 0,
+        damage: 0,
+        dmgMatches: 0,
+      };
+    }
+    return {
+      matches: 1,
+      kills: Number(m.kills) || 0,
+      wins: isWin(m) ? 1 : 0,
+      tops: isTop(m) ? 1 : 0,
+      damage: Number(m.damage) || 0,
+      dmgMatches: 1,
+    };
+  }
+  const totalMatches = (list) => list.reduce((a, m) => a + norm(m).matches, 0);
 
   /* ---------- Semaines (ISO) ---------- */
   function isoWeek(dateStr) {
@@ -98,33 +138,39 @@
     return list;
   }
 
-  /* ---------- Calcul des statistiques ---------- */
+  /* ---------- Calcul des statistiques (compatible sessions Epic) ---------- */
   function computeStats(list) {
-    const n = list.length;
-    if (!n) return null;
-    const sum = (f) => list.reduce((a, m) => a + (Number(m[f]) || 0), 0);
-    const kills = sum('kills');
-    const assists = sum('assists');
-    const damage = sum('damage');
-    const wins = list.filter(isWin).length;
-    const tops = list.filter(isTop).length;
-    // K/D en battle royale : morts ≈ matchs non gagnés
-    const deaths = n - wins;
+    if (!list.length) return null;
+    let n = 0, kills = 0, wins = 0, tops = 0, damage = 0, dmgMatches = 0, assists = 0;
+    list.forEach((m) => {
+      const x = norm(m);
+      n += x.matches;
+      kills += x.kills;
+      wins += x.wins;
+      tops += x.tops;
+      damage += x.damage;
+      dmgMatches += x.dmgMatches;
+      assists += Number(m.assists) || 0;
+    });
+    if (n === 0) return null;
+    const deaths = Math.max(0, n - wins);
+    const manualPlacements = list.filter((m) => m.source !== 'epic').map((m) => Number(m.placement) || 999);
     return {
       n,
+      entries: list.length,
       kills,
       avgKills: round(kills / n),
       assists,
       avgAssists: round(assists / n),
       damage,
-      avgDamage: round(damage / n),
+      avgDamage: dmgMatches ? round(damage / dmgMatches) : 0,
       wins,
       winRate: round((wins / n) * 100, 1),
       tops,
       topRate: round((tops / n) * 100, 1),
       kd: round(kills / Math.max(1, deaths)),
-      bestKills: Math.max(...list.map((m) => Number(m.kills) || 0)),
-      bestPlacement: Math.min(...list.map((m) => Number(m.placement) || 999)),
+      bestKills: Math.max(0, ...list.map((m) => Number(m.kills) || 0)),
+      bestPlacement: manualPlacements.length ? Math.min(...manualPlacements) : null,
     };
   }
 
@@ -151,27 +197,39 @@
 
   /* ---------- Rendu : graphiques ---------- */
   function renderCharts(list, s) {
-    // Kills par match
+    // Kills par match (moyenne par entrée : match unitaire ou session Epic)
     MiniChart.line($('#chartKills'), {
       labels: list.map((_, i) => i + 1),
-      values: list.map((m) => Number(m.kills) || 0),
+      values: list.map((m) => { const x = norm(m); return x.matches ? round(x.kills / x.matches) : 0; }),
     }, { average: s.avgKills });
 
-    // Dégâts par match
+    // Dégâts par match (uniquement les matchs saisis manuellement — Epic ne fournit pas les dégâts)
+    const dmgList = list.filter((m) => m.source !== 'epic');
     MiniChart.line($('#chartDamage'), {
-      labels: list.map((_, i) => i + 1),
-      values: list.map((m) => Number(m.damage) || 0),
+      labels: dmgList.map((_, i) => i + 1),
+      values: dmgList.map((m) => Number(m.damage) || 0),
     }, { color: '#6c5ce7', average: s.avgDamage });
 
     // Répartition des classements
     const buckets = { 'Top 1': 0, 'Top 5': 0, 'Top 10': 0, 'Top 25': 0, 'Reste': 0 };
     list.forEach((m) => {
-      const p = Number(m.placement);
-      if (p === 1) buckets['Top 1']++;
-      else if (p <= 5) buckets['Top 5']++;
-      else if (p <= 10) buckets['Top 10']++;
-      else if (p <= 25) buckets['Top 25']++;
-      else buckets['Reste']++;
+      if (m.source === 'epic') {
+        const t1 = Number(m.top1) || Number(m.wins) || 0;
+        const t10 = Number(m.top10) || 0;
+        const t25 = Number(m.top25) || 0;
+        const mt = Number(m.matches) || 0;
+        buckets['Top 1'] += t1;
+        buckets['Top 10'] += Math.max(0, t10 - t1);
+        buckets['Top 25'] += Math.max(0, t25 - t10);
+        buckets['Reste'] += Math.max(0, mt - t25);
+      } else {
+        const p = Number(m.placement);
+        if (p === 1) buckets['Top 1']++;
+        else if (p <= 5) buckets['Top 5']++;
+        else if (p <= 10) buckets['Top 10']++;
+        else if (p <= 25) buckets['Top 25']++;
+        else buckets['Reste']++;
+      }
     });
     MiniChart.bar($('#chartPlacement'), {
       labels: Object.keys(buckets),
@@ -181,14 +239,15 @@
     // Kills moyens par mode
     const modes = {};
     list.forEach((m) => {
+      const x = norm(m);
       modes[m.mode] = modes[m.mode] || { k: 0, n: 0 };
-      modes[m.mode].k += Number(m.kills) || 0;
-      modes[m.mode].n += 1;
+      modes[m.mode].k += x.kills;
+      modes[m.mode].n += x.matches;
     });
     const modeLabels = Object.keys(modes);
     MiniChart.bar($('#chartMode'), {
       labels: modeLabels,
-      values: modeLabels.map((k) => round(modes[k].k / modes[k].n)),
+      values: modeLabels.map((k) => (modes[k].n ? round(modes[k].k / modes[k].n) : 0)),
     }, { color: '#ffd43b' });
   }
 
@@ -196,12 +255,27 @@
   function renderTable() {
     const tbody = $('#matchTable tbody');
     const list = matches.slice().sort((a, b) => (a.date < b.date ? 1 : -1));
-    $('#matchCount').textContent = `${matches.length} match${matches.length > 1 ? 's' : ''}`;
+    const nMatches = totalMatches(matches);
+    $('#matchCount').textContent = `${nMatches} partie${nMatches > 1 ? 's' : ''}`;
     $('#emptyMatches').classList.toggle('hidden', matches.length > 0);
     $('#matchTable').classList.toggle('hidden', matches.length === 0);
 
     tbody.innerHTML = list
       .map((m) => {
+        if (m.source === 'epic') {
+          // Session synchronisée depuis Epic (plusieurs parties agrégées)
+          return `<tr>
+            <td>${m.date}</td>
+            <td>🔄 Auto · Epic</td>
+            <td>${m.kills}</td>
+            <td>—</td>
+            <td><span class="badge top">${m.matches} parties</span></td>
+            <td>—</td>
+            <td>${m.wins || 0} 🏆</td>
+            <td>Synchro Epic (${round((Number(m.kills) || 0) / Math.max(1, Number(m.matches) || 1))} kills/partie)</td>
+            <td><button class="del-btn" data-id="${m.id}" title="Supprimer">✕</button></td>
+          </tr>`;
+        }
         let badge = `<span class="badge loss">#${m.placement}</span>`;
         if (isWin(m)) badge = `<span class="badge win">👑 #1</span>`;
         else if (isTop(m)) badge = `<span class="badge top">#${m.placement}</span>`;
@@ -236,15 +310,14 @@
   function renderCoach() {
     const box = $('#coachContent');
     const list = matches.slice().sort((a, b) => (a.date < b.date ? -1 : 1));
-    if (list.length < 3) {
+    const s = computeStats(list);
+    if (!s || s.n < 3) {
       box.innerHTML = `<div class="insight warn">
-        <h4>Enregistre au moins 3 matchs</h4>
-        <p>Ajoute quelques matchs pour que ton coach puisse analyser ta progression et te donner des conseils personnalisés.</p>
+        <h4>Enregistre au moins 3 parties</h4>
+        <p>Synchronise tes parties depuis Epic (onglet <strong>Synchro</strong>) pour que ton coach puisse analyser ta progression et te donner des conseils personnalisés.</p>
       </div>`;
       return;
     }
-
-    const s = computeStats(list);
     const insights = [];
 
     // 1. Niveau de kills
@@ -560,23 +633,32 @@
       }
     });
 
-    // Pré-remplit la clé API mémorisée (partagée avec l'onglet "En direct")
+    // Synchronisation automatique
+    if ($('#syncBtn')) $('#syncBtn').addEventListener('click', doSync);
+
+    // Pré-remplit la clé API et le pseudo mémorisés (partagés avec "En direct" et "Synchro")
     const storedKey = localStorage.getItem('fortnite-tracker-apikey');
     if (storedKey && $('#apiKey')) $('#apiKey').value = storedKey;
+    const storedEpic = getEpicConfig();
+    if (storedEpic.name && $('#apiName')) $('#apiName').value = storedEpic.name;
+    if (storedEpic.platform && $('#apiPlatform')) $('#apiPlatform').value = storedEpic.platform;
 
     // API Fortnite
     $('#apiForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const result = $('#apiResult');
       const apiKey = $('#apiKey').value.trim();
-      // Mémorise la clé pour l'onglet "En direct" (boutique)
+      const apiName = $('#apiName').value.trim();
+      const apiPlatform = $('#apiPlatform').value;
+      // Mémorise la clé et le pseudo pour "En direct" et "Synchro"
       if (apiKey) localStorage.setItem('fortnite-tracker-apikey', apiKey);
+      if (apiName) localStorage.setItem('fortnite-tracker-epic', JSON.stringify({ name: apiName, platform: apiPlatform }));
       result.innerHTML = '<p class="muted">Chargement…</p>';
       try {
         const stats = await FortniteAPI.fetchStats({
           apiKey: apiKey,
-          name: $('#apiName').value.trim(),
-          platform: $('#apiPlatform').value,
+          name: apiName,
+          platform: apiPlatform,
         });
         result.innerHTML = `
           <h3>Stats de ${escapeHtml(stats.name)}</h3>
@@ -594,6 +676,73 @@
         result.innerHTML = `<div class="insight bad"><h4>Erreur</h4><p>${escapeHtml(err.message)}</p></div>`;
       }
     });
+  }
+
+  /* ---------- Synchronisation automatique depuis Epic ---------- */
+  async function doSync() {
+    const status = $('#syncStatus');
+    const cfg = getEpicConfig();
+    if (!cfg.key || !cfg.name) {
+      $('#syncNeedsConfig').classList.remove('hidden');
+      status.innerHTML = '';
+      return;
+    }
+    $('#syncNeedsConfig').classList.add('hidden');
+    const btn = $('#syncBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Synchronisation…';
+    status.innerHTML = '<p class="muted">Récupération de tes stats Epic…</p>';
+    try {
+      const stats = await FortniteAPI.fetchStats({ apiKey: cfg.key, name: cfg.name, platform: cfg.platform });
+      const snap = {
+        matches: stats.matches || 0,
+        kills: stats.kills || 0,
+        wins: stats.top1 || stats.wins || 0,
+        top1: stats.top1 || stats.wins || 0,
+        top10: stats.top10 || 0,
+        top25: stats.top25 || 0,
+      };
+      const base = getBaseline();
+      if (!base) {
+        setBaseline(snap);
+        status.innerHTML = `<div class="insight good"><h4>✅ Point de départ enregistré</h4>
+          <p>Compteur actuel : <strong>${snap.matches}</strong> parties au total sur ton compte. Joue quelques parties Fortnite, puis reviens cliquer sur « Synchroniser » : tes nouvelles parties s'ajouteront automatiquement.</p></div>`;
+      } else {
+        const dM = snap.matches - base.matches;
+        const dK = Math.max(0, snap.kills - base.kills);
+        const dW = Math.max(0, snap.wins - base.wins);
+        const d10 = Math.max(0, (snap.top10 || 0) - (base.top10 || 0));
+        const d25 = Math.max(0, (snap.top25 || 0) - (base.top25 || 0));
+        if (dM <= 0) {
+          setBaseline(snap);
+          status.innerHTML = `<div class="insight warn"><h4>Aucune nouvelle partie</h4>
+            <p>Aucune partie détectée depuis la dernière synchro. Rejoue puis resynchronise !</p></div>`;
+        } else {
+          matches.push({
+            id: 'e_' + Date.now() + '_' + Math.round(Math.random() * 1e6),
+            date: new Date().toISOString().slice(0, 10),
+            mode: 'Auto (Epic)',
+            source: 'epic',
+            matches: dM,
+            kills: dK,
+            wins: dW,
+            top1: dW,
+            top10: d10,
+            top25: d25,
+          });
+          save();
+          setBaseline(snap);
+          renderAll();
+          status.innerHTML = `<div class="insight good"><h4>✅ ${dM} nouvelle(s) partie(s) ajoutée(s) !</h4>
+            <p>${dK} kills, ${dW} victoire(s) — soit ${round(dK / dM)} kills/partie. Va voir ton tableau de bord et ton coach 💪</p></div>`;
+        }
+      }
+    } catch (err) {
+      status.innerHTML = `<div class="insight bad"><h4>Erreur</h4><p>${escapeHtml(err.message)}</p></div>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🔄 Synchroniser depuis Epic';
+    }
   }
 
   function valOrNull(sel) {
