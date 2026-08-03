@@ -24,6 +24,7 @@
         <h1>Fortnite Stats Tracker</h1>
         <p class="tagline">Suis tes stats, repère tes faiblesses, deviens meilleur·e</p>
       </div>
+      <button id="installBtn" class="btn install-btn hidden">📲 Installer l'app</button>
     </div>
     <nav class="tabs">
       <button class="tab active" data-tab="dashboard">Tableau de bord</button>
@@ -327,6 +328,16 @@
     </section>
   </main>
 
+  <div id="iosHelp" class="ios-help hidden">
+    <button class="ios-close" id="iosClose" aria-label="Fermer">✕</button>
+    <strong>📲 Installer sur iPhone / iPad</strong>
+    <ol>
+      <li>Appuie sur le bouton <strong>Partager</strong> (carré avec une flèche ↑) en bas de Safari.</li>
+      <li>Choisis <strong>« Sur l'écran d'accueil »</strong>.</li>
+      <li>Valide : l'app apparaît sur ton écran d'accueil comme une vraie application.</li>
+    </ol>
+  </div>
+
   <footer class="foot">
     <p>Tes données sont stockées uniquement dans ton navigateur (localStorage). Rien n'est envoyé sur un serveur, sauf si tu utilises l'API.</p>
   </footer>
@@ -335,6 +346,7 @@
   <script src="js/api.js"></script>
   <script src="js/live.js"></script>
   <script src="js/reminders.js"></script>
+  <script src="js/pwa.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

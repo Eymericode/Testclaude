@@ -17,6 +17,20 @@ Aucune installation, aucun serveur : tout tourne dans ton navigateur et tes donn
 - **Sauvegarde** : export / import de tes données en JSON.
 - **API Epic (optionnel)** : récupère automatiquement tes stats via [fortnite-api.com](https://fortnite-api.com).
 
+## 📲 Disponible sur tous les appareils
+
+L'app est une **PWA (Progressive Web App)** : un seul code qui fonctionne partout, installable comme une vraie application.
+
+| Appareil | Comment installer |
+|----------|-------------------|
+| **Android** (Chrome, Edge…) | Ouvre l'URL → un bouton **« Installer l'app »** apparaît (ou menu ⋮ → *Installer l'application*). |
+| **PC / Mac / Linux** (Chrome, Edge) | Icône d'installation dans la barre d'adresse, ou bouton **« Installer l'app »**. |
+| **iPhone / iPad** (Safari) | Bouton **Partager** → **Sur l'écran d'accueil**. |
+
+Une fois installée, l'app s'ouvre en plein écran, garde tes données, et **fonctionne même hors-ligne** (grâce au service worker qui met l'app en cache). Seules les données « En direct » nécessitent internet.
+
+> 👉 Pour que l'installation et les notifications marchent, l'app doit être **hébergée** (http/https), pas ouverte en `file://`. Voir « Mettre en ligne » ci-dessous.
+
 ## 🚀 Utilisation
 
 1. Ouvre simplement le fichier `index.html` dans ton navigateur (double-clic).
@@ -76,20 +90,37 @@ Onglet **Rappels** : coche tes jours de jeu (Lun→Dim), choisis une heure et un
 
 Un bouton **Tester la notification** permet de vérifier que tout est en place.
 
-## 🌐 Mettre en ligne (GitHub Pages)
+## 🌐 Mettre en ligne (un lien pour tous les appareils)
 
-1. Pousse le dépôt sur GitHub.
-2. Repo → *Settings → Pages* → Source : branche principale, dossier `/root`.
-3. Ton app sera accessible à `https://<utilisateur>.github.io/<repo>/`.
+Il te faut une **URL** pour installer et utiliser l'app sur n'importe quel téléphone/PC. Deux options simples et gratuites :
+
+### Option 1 — GitHub Pages (le dépôt est déjà sur GitHub)
+
+1. Sur GitHub : repo → **Settings → Pages**.
+2. **Source** : *Deploy from a branch*.
+3. **Branch** : choisis la branche (ex. `main` ou la branche de dev) et dossier **`/ (root)`**, puis *Save*.
+4. Après ~1 minute, ton app est en ligne à `https://<utilisateur>.github.io/<repo>/`.
+5. Ouvre cette URL sur ton téléphone et installe l'app (voir tableau ci-dessus).
+
+### Option 2 — Netlify / Vercel (glisser-déposer, le plus rapide)
+
+1. Va sur [app.netlify.com/drop](https://app.netlify.com/drop).
+2. Glisse-dépose le dossier du projet.
+3. Tu obtiens instantanément une URL `https://…netlify.app` accessible partout.
+
+> Les deux servent l'app en **https**, ce qui active l'installation PWA, le mode hors-ligne et les notifications sur tous les appareils.
 
 ## 📁 Structure
 
 ```
 index.html          Structure de l'application
 manifest.json       Manifeste PWA (installation sur écran d'accueil)
-icon.svg            Icône de l'app
-apple-touch-icon.png Icône pour l'écran d'accueil iOS/iPad
-sw.js               Service worker (notifications + PWA)
+icon.svg            Icône de l'app (vectorielle)
+apple-touch-icon.png Icône pour l'écran d'accueil iOS/iPad (180px)
+icon-192.png        Icône PWA Android/PC (192px)
+icon-512.png        Icône PWA Android/PC (512px)
+sw.js               Service worker (mode hors-ligne + notifications)
+js/pwa.js           Installation multi-plateforme + enregistrement du SW
 css/styles.css      Thème et mise en page
 js/charts.js        Mini-librairie de graphiques (canvas, sans dépendance)
 js/api.js           Intégration optionnelle fortnite-api.com (stats Epic)

@@ -3,9 +3,13 @@
   "short_name": "FN Stats",
   "description": "Suivi de tes statistiques Fortnite et conseils pour progresser.",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#0e1020",
   "theme_color": "#6c5ce7",
+  "lang": "fr",
+  "categories": ["games", "sports", "utilities"],
   "icons": [
     {
       "src": "icon.svg",
@@ -14,10 +18,28 @@
       "purpose": "any maskable"
     },
     {
-      "src": "apple-touch-icon.png",
-      "sizes": "180x180",
+      "src": "icon-192.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
