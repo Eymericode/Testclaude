@@ -353,6 +353,30 @@
         </div>
       </form>
       <div id="apiResult"></div>
+
+      <hr />
+
+      <h2>🔐 API officielle Epic (avancé)</h2>
+      <p class="muted">Utilise l'API officielle Epic via ton backend sécurisé (Cloudflare Worker).
+        Suis le guide dans <code>epic-proxy/README.md</code> pour le déployer, puis colle son URL ici.</p>
+      <form id="epicBackendForm" class="form">
+        <label>URL de ton backend Epic
+          <input type="url" id="epicBackendUrl" placeholder="https://epic-proxy.xxxx.workers.dev" />
+        </label>
+        <div class="form-actions">
+          <button type="button" class="btn" id="pingBackendBtn">🔌 Tester la connexion</button>
+        </div>
+        <div id="epicPingResult" class="key-test"></div>
+
+        <label style="margin-top:14px">Endpoint à interroger (chemin après <code>/api</code>)
+          <input type="text" id="epicQueryPath" placeholder="ex: /v1/... (voir la doc Epic)" />
+        </label>
+        <div class="form-actions">
+          <button type="button" class="btn primary" id="queryBackendBtn">📡 Interroger l'API Epic</button>
+        </div>
+        <p class="muted" style="font-size:13px">La réponse brute s'affiche ci-dessous. Copie-la et envoie-la moi : je finalise le mapping des stats dans l'app.</p>
+        <pre id="epicRaw" class="raw-json hidden"></pre>
+      </form>
     </section>
   </main>
 

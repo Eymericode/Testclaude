@@ -78,5 +78,51 @@
     };
   }
 
-  global.FortniteAPI = { fetchStats, testKey };
+  /* ---------- API officielle Epic via backend (proxy Cloudflare Worker) ---------- */
+
+  function cleanBase(u) {
+    return (u || '').trim().replace(/\/+$/, '');
+  }
+
+  /* Vérifie que le backend répond et que l'OAuth fonctionne (GET /). */
+  async function pingBackend(backendUrl) {
+    const base = cleanBase(backendUrl);
+    if (!base) throw new Error('URL du backend manquante.');
+    let res;
+    try {
+      res = await fetch(base + '/', { method: 'GET' });
+    } catch (e) {
+      throw new Error("Backend injoignable (URL incorrecte, non déployé, ou bloqué par le navigateur).");
+    }
+    let data = null;
+    try { data = await res.json(); } catch (e) { /* non-JSON */ }
+    if (!res.ok || !data || data.ok !== true) {
+      const msg = (data && data.error) || ('HTTP ' + res.status);
+      throw new Error(msg);
+    }
+    return data;
+  }
+
+  /* Interroge un endpoint de l'API Epic à travers le backend, et renvoie le JSON brut. */
+  async function queryBackend(backendUrl, path) {
+    const base = cleanBase(backendUrl);
+    if (!base) throw new Error('URL du backend manquante.');
+    let p = (path || '').trim();
+    if (!p.startsWith('/')) p = '/' + p;
+    let res;
+    try {
+      res = await fetch(base + '/api' + p, { method: 'GET' });
+    } catch (e) {
+      throw new Error('Backend injoignable.');
+    }
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch (e) { data = { raw: text }; }
+    if (!res.ok) {
+      throw new Error((data && data.error) || ('Erreur ' + res.status), { cause: data });
+    }
+    return data;
+  }
+
+  global.FortniteAPI = { fetchStats, testKey, pingBackend, queryBackend };
 })(window);

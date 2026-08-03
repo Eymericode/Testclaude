@@ -682,6 +682,51 @@
       });
     }
 
+    // ----- API officielle Epic (backend) -----
+    const EPIC_BACKEND_KEY = 'fortnite-tracker-epic-backend';
+    if ($('#epicBackendUrl')) {
+      const savedBackend = localStorage.getItem(EPIC_BACKEND_KEY);
+      if (savedBackend) $('#epicBackendUrl').value = savedBackend;
+
+      const saveBackend = () => {
+        const u = ($('#epicBackendUrl').value || '').trim();
+        if (u) localStorage.setItem(EPIC_BACKEND_KEY, u);
+        return u;
+      };
+
+      $('#pingBackendBtn').addEventListener('click', async () => {
+        const out = $('#epicPingResult');
+        const url = saveBackend();
+        if (!url) { out.className = 'key-test ko'; out.textContent = 'Renseigne l\'URL de ton backend.'; return; }
+        out.className = 'key-test pending';
+        out.textContent = '⏳ Test de connexion…';
+        try {
+          const data = await FortniteAPI.pingBackend(url);
+          out.className = 'key-test ok';
+          out.textContent = '✅ ' + (data.message || 'Backend opérationnel (OAuth OK).');
+        } catch (err) {
+          out.className = 'key-test ko';
+          out.textContent = '❌ ' + err.message;
+        }
+      });
+
+      $('#queryBackendBtn').addEventListener('click', async () => {
+        const url = saveBackend();
+        const path = ($('#epicQueryPath').value || '').trim();
+        const pre = $('#epicRaw');
+        if (!url) { pre.classList.remove('hidden'); pre.textContent = 'Renseigne d\'abord l\'URL du backend.'; return; }
+        if (!path) { pre.classList.remove('hidden'); pre.textContent = 'Indique le chemin de l\'endpoint (ex: /v1/…).'; return; }
+        pre.classList.remove('hidden');
+        pre.textContent = '⏳ Interrogation de l\'API Epic…';
+        try {
+          const data = await FortniteAPI.queryBackend(url, path);
+          pre.textContent = JSON.stringify(data, null, 2);
+        } catch (err) {
+          pre.textContent = '❌ ' + err.message + (err.cause ? '\n\n' + JSON.stringify(err.cause, null, 2) : '');
+        }
+      });
+    }
+
     // Pré-remplit la clé API et le pseudo mémorisés (partagés avec "En direct" et "Synchro")
     const storedKey = localStorage.getItem('fortnite-tracker-apikey');
     if (storedKey && $('#apiKey')) $('#apiKey').value = storedKey;

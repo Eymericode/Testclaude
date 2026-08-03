@@ -214,6 +214,8 @@ hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
 .key-test.ok { color: var(--good); }
 .key-test.ko { color: var(--danger); }
 .key-test.pending { color: var(--muted); }
+.raw-json { background:#0b0d1c; border:1px solid var(--border); border-radius:10px; padding:14px; margin-top:12px; font-family: ui-monospace, Menlo, monospace; font-size:12px; color:#c9cdf5; max-height:340px; overflow:auto; white-space:pre-wrap; word-break:break-word; }
+code { background: var(--panel2); padding: 1px 5px; border-radius: 4px; font-size: 90%; }
 #apiKey[type="text"] { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; letter-spacing: .5px; }
 .api-stat b { color: var(--accent2); }
 

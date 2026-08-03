@@ -1,5 +1,5 @@
 /* Service worker : mode hors-ligne (PWA installable partout) + notifications. */
-const CACHE = 'fn-tracker-v8';
+const CACHE = 'fn-tracker-v9';
 
 // Fichiers de l'app à mettre en cache (chemins relatifs à la portée du SW).
 const ASSETS = [

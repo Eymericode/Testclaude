@@ -1,0 +1,15 @@
+name = "epic-proxy"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Origine autorisée à appeler ce backend (ton app). Remplace si besoin.
+[vars]
+ALLOW_ORIGIN = "https://eymericode.github.io"
+
+# Surcharges optionnelles si la doc officielle Epic indique d'autres URL :
+# EPIC_TOKEN_URL = "https://api.epicgames.dev/epic/oauth/v2/token"
+# EPIC_API_BASE  = "https://api.fortnite.com/ecosystem"
+
+# Les secrets NE se mettent PAS ici. Utilise :
+#   npx wrangler secret put EPIC_CLIENT_ID
+#   npx wrangler secret put EPIC_CLIENT_SECRET
