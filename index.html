@@ -6,6 +6,9 @@
   <title>Fortnite Stats Tracker — Progresse à chaque match</title>
   <meta name="description" content="Suivi de tes statistiques Fortnite : kills moyens, K/D, taux de victoire, et conseils personnalisés pour t'améliorer." />
   <link rel="stylesheet" href="css/styles.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#6c5ce7" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
 </head>
 <body>
   <header class="topbar">
@@ -21,6 +24,7 @@
       <button class="tab" data-tab="matches">Mes matchs</button>
       <button class="tab" data-tab="add">Ajouter</button>
       <button class="tab" data-tab="weekly">Hebdo</button>
+      <button class="tab" data-tab="reminders">Rappels</button>
       <button class="tab" data-tab="coach">Coach</button>
       <button class="tab" data-tab="import">Données / API</button>
     </nav>
@@ -195,6 +199,44 @@
       <div id="emptyWeekly" class="empty hidden"><p>Ajoute des matchs pour voir ton suivi hebdomadaire.</p></div>
     </section>
 
+    <!-- ================= REMINDERS ================= -->
+    <section id="reminders" class="panel">
+      <h2>🔔 Rappels des jours de jeu</h2>
+      <p class="muted">Choisis les jours où tu joues et l'heure du rappel. L'app t'enverra une notification pour penser à noter tes matchs et travailler ton objectif de la semaine.</p>
+
+      <div id="notifBanner" class="insight warn hidden"></div>
+
+      <form id="reminderForm" class="form">
+        <label style="margin-bottom:8px">Mes jours de jeu</label>
+        <div id="dayPicker" class="day-picker">
+          <label class="day"><input type="checkbox" value="1" /> Lun</label>
+          <label class="day"><input type="checkbox" value="2" /> Mar</label>
+          <label class="day"><input type="checkbox" value="3" /> Mer</label>
+          <label class="day"><input type="checkbox" value="4" /> Jeu</label>
+          <label class="day"><input type="checkbox" value="5" /> Ven</label>
+          <label class="day"><input type="checkbox" value="6" /> Sam</label>
+          <label class="day"><input type="checkbox" value="0" /> Dim</label>
+        </div>
+
+        <div class="grid2" style="margin-top:16px">
+          <label>Heure du rappel
+            <input type="time" id="reminderTime" value="19:00" />
+          </label>
+        </div>
+        <label>Message personnalisé (optionnel)
+          <textarea id="reminderMessage" rows="2" placeholder="Ex: Session Fortnite ! Objectif : 3 kills/match ce soir 🎯"></textarea>
+        </label>
+
+        <div class="form-actions">
+          <button type="submit" class="btn primary" id="enableReminders">🔔 Activer les rappels</button>
+          <button type="button" class="btn" id="testNotif">Tester la notification</button>
+          <button type="button" class="btn danger" id="disableReminders">Désactiver</button>
+        </div>
+      </form>
+
+      <div id="reminderStatus" class="reminder-status"></div>
+    </section>
+
     <!-- ================= COACH ================= -->
     <section id="coach" class="panel">
       <h2>🧠 Ton coach personnel</h2>
@@ -262,6 +304,7 @@
 
   <script src="js/charts.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/reminders.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

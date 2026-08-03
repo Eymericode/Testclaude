@@ -10,6 +10,7 @@ Aucune installation, aucun serveur : tout tourne dans ton navigateur et tes donn
 - **Tableau de bord** : moyenne de kills/match, K/D, taux de victoire, Top 10 %, dégâts moyens, records.
 - **Graphiques** : évolution des kills et des dégâts, répartition des classements, kills moyens par mode.
 - **Suivi hebdomadaire 📅** : stats de la semaine en cours, **comparaison avec la semaine précédente** (deltas ▲/▼), **objectifs personnels** (kills/match, matchs, victoires, dégâts) avec barres de progression, et graphique semaine par semaine.
+- **Rappels des jours de jeu 🔔** : choisis les jours où tu joues + une heure, et l'app t'envoie une **notification** pour penser à noter tes matchs et travailler ton objectif.
 - **Coach intégré 🧠** : analyse tes performances et te donne des conseils concrets (duels, rotation, placement, objectifs).
 - **Filtres** : par mode de jeu et par période (7 / 30 jours, 20 derniers matchs).
 - **Sauvegarde** : export / import de tes données en JSON.
@@ -33,6 +34,22 @@ Pour récupérer automatiquement tes stats globales :
 
 > ⚠️ Epic ne fournit pas d'API officielle publique pour les stats par match. L'API communautaire renvoie tes stats **cumulées**. Pour un suivi match par match et les conseils, ajoute tes parties manuellement (c'est rapide, ~10 secondes par match).
 
+## 🔔 Rappels & notifications
+
+Onglet **Rappels** : coche tes jours de jeu (Lun→Dim), choisis une heure et un message, puis *Activer les rappels*. Le navigateur te demandera l'autorisation d'envoyer des notifications.
+
+**Important — les notifications ont besoin de conditions précises :**
+
+1. **Autorisation** accordée (le navigateur la demande au premier clic).
+2. **Site servi en http/https** — ça ne marche **pas** en ouvrant le fichier en `file://`. Deux options :
+   - **Local** : dans le dossier du projet, lance `npx http-server` (ou `python3 -m http.server`) puis ouvre `http://localhost:8080`.
+   - **En ligne** : héberge sur GitHub Pages (voir ci-dessous) — recommandé.
+3. **App ouverte ou installée** : la notification part quand l'onglet est ouvert (même en arrière-plan) ou quand tu as *installé* l'app (PWA : menu du navigateur → « Installer l'application »). Sur mobile, installe-la sur l'écran d'accueil.
+
+> 💡 Pour des notifications même **app complètement fermée**, il faut un serveur push (Web Push + VAPID). C'est une évolution possible si tu héberges un petit backend — dis-le moi si tu veux l'ajouter.
+
+Un bouton **Tester la notification** permet de vérifier que tout est en place.
+
 ## 🌐 Mettre en ligne (GitHub Pages)
 
 1. Pousse le dépôt sur GitHub.
@@ -43,10 +60,14 @@ Pour récupérer automatiquement tes stats globales :
 
 ```
 index.html          Structure de l'application
+manifest.json       Manifeste PWA (installation sur écran d'accueil)
+icon.svg            Icône de l'app
+sw.js               Service worker (notifications + PWA)
 css/styles.css      Thème et mise en page
 js/charts.js        Mini-librairie de graphiques (canvas, sans dépendance)
 js/api.js           Intégration optionnelle fortnite-api.com
-js/app.js           Logique : stockage, stats, coach, rendu
+js/reminders.js     Rappels des jours de jeu (notifications)
+js/app.js           Logique : stockage, stats, hebdo, coach, rendu
 ```
 
 ---
