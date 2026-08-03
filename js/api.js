@@ -18,22 +18,29 @@
       );
     }
 
+    // On lit le corps en texte puis on tente le JSON : ça permet de remonter le
+    // vrai message de l'API même si la réponse n'est pas du JSON.
+    const text = await res.text();
     let json = null;
-    try { json = await res.json(); } catch (e) { /* corps non-JSON */ }
-    const apiMsg = json && (json.error || json.message);
+    try { json = JSON.parse(text); } catch (e) { /* corps non-JSON */ }
+    const apiMsg = (json && (json.error || json.message)) || (text ? text.slice(0, 160) : '');
+    const detail = apiMsg ? ' — ' + apiMsg : '';
 
-    if (res.ok) return json;
+    if (res.ok) return json || {};
 
-    if (res.status === 401 || res.status === 403) {
-      throw new Error('Clé API invalide ou non autorisée' + (apiMsg ? ' — ' + apiMsg : '') + '.');
+    if (res.status === 401) {
+      throw new Error('Clé API invalide (401)' + detail + '. Vérifie ou régénère ta clé sur dash.fortnite-api.com.');
+    }
+    if (res.status === 403) {
+      throw new Error('Accès refusé (403)' + detail + '. Cause la plus fréquente : les statistiques de ton compte sont PRIVÉES. Rends-les publiques dans Fortnite (Paramètres → Compte et confidentialité). Utilise « Tester ma clé » pour vérifier que ta clé, elle, est bonne.');
     }
     if (res.status === 404) {
-      throw new Error(apiMsg || 'Joueur introuvable ou stats privées. Rends tes stats publiques (Paramètres Epic → Confidentialité).');
+      throw new Error('Joueur introuvable (404)' + detail + '. Vérifie l\'orthographe exacte du pseudo Epic et la bonne plateforme (PC / PlayStation / Xbox).');
     }
     if (res.status === 429) {
-      throw new Error('Trop de requêtes (limite de l\'API atteinte). Réessaie dans une minute.');
+      throw new Error('Trop de requêtes (429). Attends une minute puis réessaie.');
     }
-    throw new Error('Erreur API ' + res.status + (apiMsg ? ' — ' + apiMsg : '') + '.');
+    throw new Error('Erreur API ' + res.status + detail + '.');
   }
 
   /* Valide UNIQUEMENT la clé (endpoint boutique : nécessite la clé, pas de pseudo). */
