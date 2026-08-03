@@ -246,6 +246,44 @@ hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
 .ladder-state.cur { color: var(--accent2); }
 .ladder-state.lock { color: var(--muted); }
 
+/* Badge de rang dans l'en-tête */
+.brand-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.brand-right .install-btn { margin-left: 0; }
+.rank-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; border: none; border-radius: 20px; padding: 7px 14px;
+  font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: var(--shadow); white-space: nowrap;
+}
+.rank-badge:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.rank-badge .rb-emoji { font-size: 16px; }
+
+/* Célébration de montée de rang */
+.celebrate-overlay {
+  position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;
+  background: rgba(6,8,20,.78); backdrop-filter: blur(4px); overflow: hidden; animation: fadeIn .25s ease;
+}
+.celebrate-card {
+  position: relative; z-index: 2; text-align: center;
+  background: linear-gradient(160deg, var(--panel2), var(--panel));
+  border: 1px solid var(--border); border-radius: 20px; padding: 32px 44px; box-shadow: var(--shadow);
+  animation: pop .45s cubic-bezier(.2,.8,.2,1.2);
+}
+.celebrate-tag { color: var(--gold); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; font-size: 13px; }
+.celebrate-emoji { font-size: 82px; margin: 10px 0; animation: pulse 1.2s ease-in-out infinite; }
+.celebrate-rank { font-size: 34px; font-weight: 900; margin-bottom: 22px; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+.confetti {
+  position: absolute; top: -24px; width: 10px; height: 14px; border-radius: 2px; opacity: .9;
+  animation-name: confettiFall; animation-timing-function: linear; animation-iteration-count: 1;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(-24px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(680deg); opacity: .6; }
+}
+
 .foot { text-align: center; color: var(--muted); font-size: 12px; padding: 24px; }
 
 .api-stat { display:inline-block; background: var(--panel2); border:1px solid var(--border); border-radius:8px; padding:8px 12px; margin:4px; font-size:13px; }

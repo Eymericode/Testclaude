@@ -530,23 +530,49 @@
     tbody.innerHTML = rows.join('');
   }
 
-  /* ---------- Rangs (progression globale, tous modes confondus) ---------- */
-  const RANKS = [
-    { name: 'Recrue', emoji: '🥉', min: 0 },
-    { name: 'Combattant', emoji: '⚔️', min: 50 },
-    { name: 'Vétéran', emoji: '🛡️', min: 150 },
-    { name: 'Élite', emoji: '🎖️', min: 400 },
-    { name: 'As', emoji: '🃏', min: 800 },
-    { name: 'Maître', emoji: '🏆', min: 1500 },
-    { name: 'Champion', emoji: '👑', min: 3000 },
-    { name: 'Légende', emoji: '🌟', min: 6000 },
-    { name: 'Mythique', emoji: '🔥', min: 12000 },
-    { name: 'Immortel', emoji: '💎', min: 25000 },
+  /* ---------- Rangs (progression, tous modes confondus) ---------- */
+  const RANK_TIERS = [
+    { name: 'Recrue', emoji: '🥉' },
+    { name: 'Combattant', emoji: '⚔️' },
+    { name: 'Vétéran', emoji: '🛡️' },
+    { name: 'Élite', emoji: '🎖️' },
+    { name: 'As', emoji: '🃏' },
+    { name: 'Maître', emoji: '🏆' },
+    { name: 'Champion', emoji: '👑' },
+    { name: 'Légende', emoji: '🌟' },
+    { name: 'Mythique', emoji: '🔥' },
+    { name: 'Immortel', emoji: '💎' },
   ];
+  const GLOBAL_MIN = [0, 50, 150, 400, 800, 1500, 3000, 6000, 12000, 25000];
+  const KILLS_MIN = [0, 25, 75, 200, 500, 1000, 2000, 4000, 8000, 15000];
+  const WINS_MIN = [0, 1, 3, 7, 15, 30, 60, 120, 250, 500];
   const WIN_BONUS = 15;
+  const RANK_SEEN_KEY = 'fortnite-tracker-rank-seen';
 
-  function rankScore(s) {
-    return Math.round((s.kills || 0) + (s.wins || 0) * WIN_BONUS);
+  const rankScore = (s) => Math.round((s.kills || 0) + (s.wins || 0) * WIN_BONUS);
+  function tierIndex(value, mins) {
+    let idx = 0;
+    for (let i = 0; i < mins.length; i++) if (value >= mins[i]) idx = i;
+    return idx;
+  }
+
+  /* Petite carte de rang (Kills ou Victoires) */
+  function ladderBadgeHtml(title, value, mins, unit) {
+    const idx = tierIndex(value, mins);
+    const cur = RANK_TIERS[idx];
+    let prog;
+    if (idx + 1 < mins.length) {
+      const nextMin = mins[idx + 1];
+      const span = nextMin - mins[idx];
+      const pct = Math.max(0, Math.min(100, Math.round(((value - mins[idx]) / span) * 100)));
+      prog = `<div class="rank-bar" style="margin-top:8px"><span style="width:${pct}%"></span></div>
+        <div class="lt" style="margin-top:6px">Encore ${nextMin - value} ${unit} → ${RANK_TIERS[idx + 1].emoji} ${RANK_TIERS[idx + 1].name}</div>`;
+    } else {
+      prog = '<div class="lt" style="margin-top:6px">Palier maximum 🎉</div>';
+    }
+    return `<div class="card"><div class="label">${title}</div>
+      <div style="font-size:22px;font-weight:800;margin:6px 0">${cur.emoji} ${cur.name}</div>
+      <div class="rank-score">${value} ${unit}</div>${prog}</div>`;
   }
 
   function renderRanks() {
@@ -560,18 +586,15 @@
     }
 
     const score = rankScore(s);
-    let idx = 0;
-    for (let i = 0; i < RANKS.length; i++) if (score >= RANKS[i].min) idx = i;
-    const cur = RANKS[idx];
-    const next = RANKS[idx + 1] || null;
+    const idx = tierIndex(score, GLOBAL_MIN);
+    const cur = RANK_TIERS[idx];
 
-    // Progression vers le rang suivant
     let progressHtml;
-    if (next) {
-      const span = next.min - cur.min;
-      const pct = Math.max(0, Math.min(100, Math.round(((score - cur.min) / span) * 100)));
-      const remaining = next.min - score;
-      progressHtml = `<div class="rank-next">Plus que <strong>${remaining}</strong> points pour <strong>${next.emoji} ${next.name}</strong></div>
+    if (idx + 1 < GLOBAL_MIN.length) {
+      const nextMin = GLOBAL_MIN[idx + 1];
+      const span = nextMin - GLOBAL_MIN[idx];
+      const pct = Math.max(0, Math.min(100, Math.round(((score - GLOBAL_MIN[idx]) / span) * 100)));
+      progressHtml = `<div class="rank-next">Plus que <strong>${nextMin - score}</strong> points pour <strong>${RANK_TIERS[idx + 1].emoji} ${RANK_TIERS[idx + 1].name}</strong></div>
         <div class="rank-bar"><span style="width:${pct}%"></span></div>`;
     } else {
       progressHtml = `<div class="rank-next">🎉 Rang maximum atteint — tu es une véritable légende vivante !</div>`;
@@ -584,19 +607,76 @@
       ${progressHtml}
     </div>`;
 
-    const ladder = '<div class="ladder">' + RANKS.map((r, i) => {
+    // Rangs séparés Kills / Victoires
+    const subs = `<div class="cards" style="margin-bottom:20px">
+      ${ladderBadgeHtml('🎯 Rang Kills', s.kills, KILLS_MIN, 'kills')}
+      ${ladderBadgeHtml('👑 Rang Victoires', s.wins, WINS_MIN, 'victoires')}
+    </div>`;
+
+    const ladder = '<h3>Échelle globale</h3><div class="ladder">' + RANK_TIERS.map((r, i) => {
       let state = '<span class="ladder-state lock">🔒 verrouillé</span>';
       let cls = 'locked';
       if (i === idx) { state = '<span class="ladder-state cur">◈ rang actuel</span>'; cls = 'current'; }
-      else if (score >= r.min) { state = '<span class="ladder-state ok">✅ débloqué</span>'; cls = ''; }
+      else if (score >= GLOBAL_MIN[i]) { state = '<span class="ladder-state ok">✅ débloqué</span>'; cls = ''; }
       return `<div class="ladder-item ${cls}">
         <div class="ladder-emoji">${r.emoji}</div>
-        <div class="ladder-info"><div class="ln">${r.name}</div><div class="lt">${r.min} pts</div></div>
+        <div class="ladder-info"><div class="ln">${r.name}</div><div class="lt">${GLOBAL_MIN[i]} pts</div></div>
         ${state}
       </div>`;
     }).join('') + '</div>';
 
-    box.innerHTML = hero + ladder;
+    box.innerHTML = hero + subs + ladder;
+  }
+
+  /* Badge de rang dans l'en-tête (visible sur tous les onglets) */
+  function renderRankBadge() {
+    const el = $('#rankBadge');
+    if (!el) return;
+    const s = computeStats(matches);
+    if (!s) { el.classList.add('hidden'); return; }
+    const cur = RANK_TIERS[tierIndex(rankScore(s), GLOBAL_MIN)];
+    el.innerHTML = `<span class="rb-emoji">${cur.emoji}</span><span>${cur.name}</span>`;
+    el.classList.remove('hidden');
+  }
+
+  /* Détecte une montée de rang et déclenche la célébration */
+  function checkRankUp() {
+    const s = computeStats(matches);
+    if (!s) return;
+    const idx = tierIndex(rankScore(s), GLOBAL_MIN);
+    let seen = null;
+    const raw = localStorage.getItem(RANK_SEEN_KEY);
+    if (raw !== null) seen = Number(raw);
+    if (seen === null) { localStorage.setItem(RANK_SEEN_KEY, String(idx)); return; }
+    if (idx > seen) celebrateRank(RANK_TIERS[idx]);
+    if (idx !== seen) localStorage.setItem(RANK_SEEN_KEY, String(idx));
+  }
+
+  /* Animation de célébration (overlay + confettis) */
+  function celebrateRank(rank) {
+    const colors = ['#6c5ce7', '#00cec9', '#ffd43b', '#ff6b6b', '#51cf66'];
+    let confetti = '';
+    for (let i = 0; i < 44; i++) {
+      const left = Math.random() * 100;
+      const delay = Math.random() * 0.7;
+      const dur = 1.8 + Math.random() * 1.6;
+      const col = colors[i % colors.length];
+      const rot = Math.round(Math.random() * 360);
+      confetti += `<span class="confetti" style="left:${left}%;background:${col};animation-delay:${delay}s;animation-duration:${dur}s;transform:rotate(${rot}deg)"></span>`;
+    }
+    const overlay = document.createElement('div');
+    overlay.className = 'celebrate-overlay';
+    overlay.innerHTML = `${confetti}<div class="celebrate-card">
+      <div class="celebrate-tag">Nouveau rang débloqué !</div>
+      <div class="celebrate-emoji">${rank.emoji}</div>
+      <div class="celebrate-rank">${rank.name}</div>
+      <button class="btn primary" id="celebrateClose">Continuer 🚀</button>
+    </div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelector('#celebrateClose').addEventListener('click', close);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+    setTimeout(close, 7000);
   }
 
   /* ---------- Rendu global ---------- */
@@ -635,7 +715,9 @@
     renderTable();
     renderWeekly();
     renderRanks();
+    renderRankBadge();
     renderCoach();
+    checkRankUp();
   }
 
   /* ---------- Navigation par onglets ---------- */
