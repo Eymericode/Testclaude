@@ -21,7 +21,10 @@ npx wrangler kv namespace create LEADERBOARD
 
 # 2) ...et colle-le dans wrangler.toml (champ id du bloc [[kv_namespaces]])
 
-# 3) Déploie
+# 3) Clé API Epic pour la vérification anti-triche (récupérée sur dash.fortnite-api.com)
+npx wrangler secret put FORTNITE_API_KEY
+
+# 4) Déploie
 npx wrangler deploy
 ```
 
@@ -49,12 +52,21 @@ Le classement se remplit au fur et à mesure que des joueurs publient.
 | Méthode | Route | Rôle |
 |--------|-------|------|
 | GET | `/` | Santé |
-| POST | `/submit` | Publie/actualise un joueur `{ name, score, kills, wins, matches, rank }` |
+| POST | `/submit` | Publie un joueur `{ name, platform }` — le serveur **vérifie via Epic** et calcule le score |
 | GET | `/top?limit=50` | Top des joueurs, triés par score |
+
+## 🛡️ Anti-triche
+
+Le client n'envoie **que le pseudo Epic** (+ plateforme). Le serveur :
+1. appelle l'API Epic (fortnite-api.com) avec **sa** clé (`FORTNITE_API_KEY`),
+2. récupère les **vraies** stats du joueur,
+3. **calcule le score côté serveur** (`kills + victoires × 15`).
+
+→ Impossible de gonfler son score depuis le navigateur. Seuls les comptes Epic aux **stats publiques** peuvent rejoindre le classement.
 
 ## Notes
 
-- **Une entrée par pseudo** (insensible à la casse) : republier met à jour ton score.
+- **Une entrée par compte Epic** (insensible à la casse) : republier met à jour tes stats.
 - **Vie privée** : le pseudo et le score publiés sont **visibles publiquement** via `/top`.
 - `ALLOW_ORIGIN` (wrangler.toml) restreint qui peut appeler le backend — mets l'URL de ton app, ou `*` pour tout autoriser.
-- Pas d'authentification : n'importe qui connaissant l'URL peut publier. Pour un usage entre amis c'est suffisant ; pour aller plus loin on pourrait ajouter une clé ou une vérification via l'API Epic.
+- Limite restante : quelqu'un peut publier le pseudo Epic **d'un autre** joueur (les stats resteront réelles, mais ce n'est pas « son » compte). Empêcher totalement l'usurpation demanderait une connexion Epic (OAuth) — possible en évolution.

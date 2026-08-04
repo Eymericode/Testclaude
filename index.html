@@ -287,8 +287,9 @@
     <!-- ================= LEADERBOARD ================= -->
     <section id="leaderboard" class="panel">
       <h2>🏅 Classement des joueurs</h2>
-      <p class="muted">Compare-toi aux autres joueurs de l'app ! Publie ton score pour apparaître dans le classement.
-        ⚠️ Ton <strong>pseudo et ton score deviennent visibles</strong> par les autres.</p>
+      <p class="muted">Compare-toi aux autres joueurs ! 🛡️ <strong>Anti-triche</strong> : ton score est
+        <strong>vérifié directement via Epic</strong> côté serveur — impossible de le falsifier. Il te faut donc
+        un compte Epic aux <strong>stats publiques</strong>. ⚠️ Ton pseudo et ton score deviennent visibles par les autres.</p>
 
       <div id="lbNeedsConfig" class="insight warn hidden">
         <h4>⚙️ Backend requis</h4>
@@ -300,8 +301,15 @@
           <label>URL du backend classement
             <input type="url" id="lbBackendUrl" placeholder="https://fn-leaderboard.xxxx.workers.dev" />
           </label>
-          <label>Ton pseudo public
-            <input type="text" id="lbName" maxlength="24" placeholder="Ton pseudo affiché" />
+          <label>Ton pseudo Epic (vérifié)
+            <input type="text" id="lbName" maxlength="24" placeholder="Ton pseudo Epic exact" />
+          </label>
+          <label>Plateforme
+            <select id="lbPlatform">
+              <option value="epic">PC / Epic</option>
+              <option value="psn">PlayStation</option>
+              <option value="xbl">Xbox</option>
+            </select>
           </label>
         </div>
         <div class="form-actions">

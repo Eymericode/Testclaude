@@ -12,3 +12,8 @@ ALLOW_ORIGIN = "https://eymericode.github.io"
 [[kv_namespaces]]
 binding = "LEADERBOARD"
 id = "REMPLACE_PAR_TON_ID_KV"
+
+# Secret pour la vérification anti-triche (les scores sont récupérés depuis Epic
+# côté serveur). NE le mets PAS ici, définis-le avec :
+#   npx wrangler secret put FORTNITE_API_KEY
+

@@ -888,39 +888,43 @@
     // Synchronisation automatique
     if ($('#syncBtn')) $('#syncBtn').addEventListener('click', doSync);
 
-    // ----- Classement (leaderboard) -----
+    // ----- Classement (leaderboard) — score vérifié via Epic -----
     if ($('#lbBackendUrl')) {
+      const LB_PLATFORM_KEY = 'fortnite-tracker-lb-platform';
+      const epicCfg = getEpicConfig();
       const savedUrl = localStorage.getItem(LB_BACKEND_KEY);
       if (savedUrl) $('#lbBackendUrl').value = savedUrl;
-      const savedName = localStorage.getItem(LB_NAME_KEY) || getEpicConfig().name;
+      const savedName = localStorage.getItem(LB_NAME_KEY) || epicCfg.name;
       if (savedName) $('#lbName').value = savedName;
+      const savedPlatform = localStorage.getItem(LB_PLATFORM_KEY) || epicCfg.platform;
+      if (savedPlatform && $('#lbPlatform')) $('#lbPlatform').value = savedPlatform;
 
       const persistLb = () => {
         const u = ($('#lbBackendUrl').value || '').trim();
         const n = ($('#lbName').value || '').trim();
+        const p = ($('#lbPlatform') && $('#lbPlatform').value) || 'epic';
         if (u) localStorage.setItem(LB_BACKEND_KEY, u); else localStorage.removeItem(LB_BACKEND_KEY);
         if (n) localStorage.setItem(LB_NAME_KEY, n);
-        return { u, n };
+        localStorage.setItem(LB_PLATFORM_KEY, p);
+        return { u, n, p };
       };
 
       $('#refreshLb').addEventListener('click', () => { persistLb(); refreshLeaderboard(); });
 
       $('#publishScore').addEventListener('click', async () => {
-        const { u, n } = persistLb();
+        const { u, n, p } = persistLb();
         const status = $('#lbStatus');
         if (!u) { status.className = 'key-test ko'; status.textContent = 'Renseigne l\'URL du backend du classement.'; return; }
-        if (!n) { status.className = 'key-test ko'; status.textContent = 'Choisis ton pseudo public.'; return; }
-        const s = computeStats(matches);
-        if (!s) { status.className = 'key-test ko'; status.textContent = 'Ajoute ou synchronise des parties avant de publier ton score.'; return; }
-        const score = rankScore(s);
-        const rankName = RANK_TIERS[tierIndex(score, GLOBAL_MIN)].name;
+        if (!n) { status.className = 'key-test ko'; status.textContent = 'Renseigne ton pseudo Epic exact.'; return; }
         status.className = 'key-test pending';
-        status.textContent = '⏳ Publication…';
+        status.textContent = '⏳ Vérification via Epic et publication…';
         try {
-          await global.Leaderboard.submit(u, { name: n, score: score, kills: s.kills, wins: s.wins, matches: s.n, rank: rankName });
+          // Le serveur récupère les vraies stats via Epic et calcule le score : anti-triche.
+          const data = await global.Leaderboard.submit(u, { name: n, platform: p });
+          const e = data.entry || {};
+          await refreshLeaderboard();
           status.className = 'key-test ok';
-          status.textContent = '✅ Score publié ! Tu apparais dans le classement.';
-          refreshLeaderboard();
+          status.textContent = `✅ Vérifié et publié ! ${e.score != null ? e.score + ' pts (' + (e.kills || 0) + ' kills, ' + (e.wins || 0) + ' victoires)' : ''}`;
         } catch (err) {
           status.className = 'key-test ko';
           status.textContent = '❌ ' + err.message;
