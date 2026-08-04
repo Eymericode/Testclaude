@@ -87,14 +87,14 @@
   const SQUADS = ['Solo', 'Duo', 'Trio', 'Squad'];
   /* Composition d'une entrée (Solo/Duo/Trio/Squad), avec compatibilité ancien champ "mode". */
   function matchSquad(m) {
-    if (m.source === 'epic') return null; // session agrégée : pas de composition précise
+    if (m.source === 'epic') return m.squad || null; // composition détectée par l'API si dispo
     if (m.squad) return m.squad;
     if (SQUADS.indexOf(m.mode) !== -1) return m.mode;
     return null;
   }
   /* Type de partie (Battle Royale / Arène / Reload…), avec compatibilité ancien champ "mode". */
   function matchGameType(m) {
-    if (m.source === 'epic') return null;
+    if (m.source === 'epic') return m.gameType || null;
     if (m.gameType) return m.gameType;
     if (m.mode === 'Arena') return 'Arène';
     if (SQUADS.indexOf(m.mode) !== -1) return 'Battle Royale';
@@ -287,7 +287,7 @@
           // Session synchronisée depuis Epic (plusieurs parties agrégées)
           return `<tr>
             <td>${m.date}</td>
-            <td>🔄 Auto · Epic</td>
+            <td>🔄 ${escapeHtml(matchSquad(m) || 'Global')} · Epic</td>
             <td>${m.kills}</td>
             <td>—</td>
             <td><span class="badge top">${m.matches} parties</span></td>
@@ -1002,42 +1002,81 @@
         top1: stats.top1 || stats.wins || 0,
         top10: stats.top10 || 0,
         top25: stats.top25 || 0,
+        modes: stats.modes || null,
       };
       const base = getBaseline();
+      const today = new Date().toISOString().slice(0, 10);
+      const newId = () => 'e_' + Date.now() + '_' + Math.round(Math.random() * 1e6);
+
       if (!base) {
         setBaseline(snap);
         status.innerHTML = `<div class="insight good"><h4>✅ Point de départ enregistré</h4>
-          <p>Compteur actuel : <strong>${snap.matches}</strong> parties au total sur ton compte. Joue quelques parties Fortnite, puis reviens cliquer sur « Synchroniser » : tes nouvelles parties s'ajouteront automatiquement.</p></div>`;
-      } else {
-        const dM = snap.matches - base.matches;
-        const dK = Math.max(0, snap.kills - base.kills);
-        const dW = Math.max(0, snap.wins - base.wins);
-        const d10 = Math.max(0, (snap.top10 || 0) - (base.top10 || 0));
-        const d25 = Math.max(0, (snap.top25 || 0) - (base.top25 || 0));
-        if (dM <= 0) {
-          setBaseline(snap);
-          status.innerHTML = `<div class="insight warn"><h4>Aucune nouvelle partie</h4>
-            <p>Aucune partie détectée depuis la dernière synchro. Rejoue puis resynchronise !</p></div>`;
-        } else {
+          <p>Compteur actuel : <strong>${snap.matches}</strong> parties au total sur ton compte. Joue quelques parties Fortnite, puis reviens cliquer sur « Synchroniser » : tes nouvelles parties se classeront automatiquement par composition.</p></div>`;
+        return;
+      }
+
+      const dM = snap.matches - base.matches;
+      if (dM <= 0) {
+        setBaseline(snap);
+        status.innerHTML = `<div class="insight warn"><h4>Aucune nouvelle partie</h4>
+          <p>Aucune partie détectée depuis la dernière synchro. Rejoue puis resynchronise !</p></div>`;
+        return;
+      }
+
+      // Delta global
+      const gK = Math.max(0, snap.kills - base.kills);
+      const gW = Math.max(0, snap.wins - base.wins);
+      const g10 = Math.max(0, (snap.top10 || 0) - (base.top10 || 0));
+      const g25 = Math.max(0, (snap.top25 || 0) - (base.top25 || 0));
+
+      const added = [];
+      let sumM = 0, sumK = 0, sumW = 0, sum10 = 0, sum25 = 0;
+
+      // Répartition par composition (Solo/Duo/Trio/Squad) quand l'API la fournit
+      if (snap.modes && base.modes) {
+        SQUADS.forEach((comp) => {
+          const c = snap.modes[comp] || {};
+          const b = base.modes[comp] || {};
+          const dm = (c.matches || 0) - (b.matches || 0);
+          if (dm <= 0) return;
+          const dk = Math.max(0, (c.kills || 0) - (b.kills || 0));
+          const dw = Math.max(0, (c.wins || 0) - (b.wins || 0));
           matches.push({
-            id: 'e_' + Date.now() + '_' + Math.round(Math.random() * 1e6),
-            date: new Date().toISOString().slice(0, 10),
-            mode: 'Auto (Epic)',
-            source: 'epic',
-            matches: dM,
-            kills: dK,
-            wins: dW,
-            top1: dW,
-            top10: d10,
-            top25: d25,
+            id: newId(), date: today, source: 'epic', gameType: 'Battle Royale', squad: comp,
+            matches: dm, kills: dk, wins: dw, top1: dw,
+            top10: Math.max(0, (c.top10 || 0) - (b.top10 || 0)),
+            top25: Math.max(0, (c.top25 || 0) - (b.top25 || 0)),
           });
-          save();
-          setBaseline(snap);
-          renderAll();
-          status.innerHTML = `<div class="insight good"><h4>✅ ${dM} nouvelle(s) partie(s) ajoutée(s) !</h4>
-            <p>${dK} kills, ${dW} victoire(s) — soit ${round(dK / dM)} kills/partie. Va voir ton tableau de bord et ton coach 💪</p></div>`;
+          added.push(`${dm} ${comp}`);
+          sumM += dm; sumK += dk; sumW += dw;
+        });
+        // Reste (modes non détaillés : LTM, etc.) → entrée générique (Tout)
+        const rM = dM - sumM;
+        if (rM > 0) {
+          matches.push({
+            id: newId(), date: today, source: 'epic', gameType: null, squad: null,
+            matches: rM, kills: Math.max(0, gK - sumK), wins: Math.max(0, gW - sumW),
+            top1: Math.max(0, gW - sumW), top10: Math.max(0, g10 - sum10), top25: Math.max(0, g25 - sum25),
+          });
+          added.push(`${rM} autres`);
         }
       }
+
+      // Repli : aucune répartition possible → une seule session globale
+      if (!added.length) {
+        matches.push({
+          id: newId(), date: today, source: 'epic', gameType: 'Battle Royale', squad: null,
+          matches: dM, kills: gK, wins: gW, top1: gW, top10: g10, top25: g25,
+        });
+        added.push(`${dM} parties`);
+      }
+
+      save();
+      setBaseline(snap);
+      renderAll();
+      status.innerHTML = `<div class="insight good"><h4>✅ ${dM} nouvelle(s) partie(s) ajoutée(s) !</h4>
+        <p>${gK} kills, ${gW} victoire(s). Classées : <strong>${added.join(' · ')}</strong>. Va voir ton tableau de bord 💪</p></div>`;
+      return;
     } catch (err) {
       status.innerHTML = `<div class="insight bad"><h4>Erreur</h4><p>${escapeHtml(err.message)}</p></div>`;
     } finally {

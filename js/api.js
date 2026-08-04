@@ -65,9 +65,23 @@
     return normalize(data);
   }
 
-  /* Transforme la réponse de l'API en un résumé simple. */
+  /* Extrait les compteurs utiles d'un "bucket" de stats (overall, solo, duo…). */
+  function bucketOf(b) {
+    b = b || {};
+    return {
+      matches: b.matches || 0,
+      kills: b.kills || 0,
+      wins: b.wins || b.top1 || 0,
+      top1: b.top1 || b.wins || 0,
+      top10: b.top10 || 0,
+      top25: b.top25 || 0,
+    };
+  }
+
+  /* Transforme la réponse de l'API en un résumé, avec le détail par composition. */
   function normalize(data) {
-    const all = (data && data.stats && data.stats.all && data.stats.all.overall) || {};
+    const stats = (data && data.stats && data.stats.all) || {};
+    const all = stats.overall || {};
     return {
       name: data && data.account ? data.account.name : '',
       matches: all.matches || 0,
@@ -82,6 +96,13 @@
       top25: all.top25 || 0,
       minutesPlayed: all.minutesPlayed || 0,
       score: all.score || 0,
+      // Détail par composition (quand l'API le fournit).
+      modes: {
+        Solo: bucketOf(stats.solo),
+        Duo: bucketOf(stats.duo),
+        Trio: bucketOf(stats.trio),
+        Squad: bucketOf(stats.squad),
+      },
     };
   }
 
