@@ -90,6 +90,10 @@ Onglet **Rappels** : coche tes jours de jeu (Lun→Dim), choisis une heure et un
 
 Un bouton **Tester la notification** permet de vérifier que tout est en place.
 
+## 📦 Déploiement complet
+
+Pour tout mettre en place (app + backends optionnels) dans l'ordre, suis le guide unique : **[DEPLOIEMENT.md](DEPLOIEMENT.md)**.
+
 ## 🌐 Mettre en ligne (un lien pour tous les appareils)
 
 Il te faut une **URL** pour installer et utiliser l'app sur n'importe quel téléphone/PC. Deux options simples et gratuites :
