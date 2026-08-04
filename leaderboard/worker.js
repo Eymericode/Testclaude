@@ -81,6 +81,55 @@ async function readBoard(env) {
   try { return JSON.parse(raw) || {}; } catch (e) { return {}; }
 }
 
+/* ---------- Connexion Epic (OAuth2 authorization_code) ----------
+   Empêche l'usurpation : c'est Epic qui certifie l'identité du joueur.
+   URLs par défaut à VÉRIFIER dans le Portail Développeur Epic (surchargeables). */
+const OAUTH_DEFAULTS = {
+  AUTHORIZE_URL: 'https://www.epicgames.com/id/authorize',
+  TOKEN_URL: 'https://api.epicgames.dev/epic/oauth/v2/token',
+  ACCOUNT_URL: 'https://api.epicgames.dev/epic/oauth/v2/userInfo',
+  SCOPE: 'basic_profile',
+};
+
+async function epicExchange(env, code) {
+  const clientId = env.EPIC_OAUTH_CLIENT_ID;
+  const clientSecret = env.EPIC_OAUTH_CLIENT_SECRET;
+  const redirect = env.EPIC_REDIRECT_URI;
+  if (!clientId || !clientSecret || !redirect) {
+    throw { status: 500, msg: 'Connexion Epic non configurée (client id/secret/redirect — voir README).' };
+  }
+  const tokenUrl = env.EPIC_TOKEN_URL || OAUTH_DEFAULTS.TOKEN_URL;
+  const body = 'grant_type=authorization_code&code=' + encodeURIComponent(code) +
+    '&redirect_uri=' + encodeURIComponent(redirect);
+  let res;
+  try {
+    res = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { Authorization: 'Basic ' + btoa(clientId + ':' + clientSecret), 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body,
+    });
+  } catch (e) { throw { status: 502, msg: "Échange OAuth impossible (contact Epic)." }; }
+  const text = await res.text();
+  let tok = null;
+  try { tok = JSON.parse(text); } catch (e) { /* non-JSON */ }
+  if (!res.ok || !tok) throw { status: 401, msg: 'Connexion Epic refusée : ' + text.slice(0, 150) };
+
+  const accountId = tok.account_id || tok.sub || tok.accountId;
+  let displayName = tok.displayName || tok.display_name || '';
+  const accessToken = tok.access_token;
+  if (!displayName && accessToken) {
+    try {
+      const ir = await fetch(env.EPIC_ACCOUNT_URL || OAUTH_DEFAULTS.ACCOUNT_URL, { headers: { Authorization: 'Bearer ' + accessToken } });
+      const itxt = await ir.text();
+      let info = null;
+      try { info = JSON.parse(itxt); } catch (e) { /* non-JSON */ }
+      if (info) displayName = info.displayName || info.display_name || info.preferred_username || info.name || '';
+    } catch (e) { /* ignore */ }
+  }
+  if (!accountId) throw { status: 502, msg: 'Réponse OAuth Epic inattendue (identifiant de compte manquant).' };
+  return { accountId: String(accountId), displayName: displayName };
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') return new Response(null, { headers: cors(env) });
@@ -107,6 +156,11 @@ export default {
         return json(env, { error: e.msg || 'Vérification Epic échouée.' }, e.status || 400);
       }
 
+      const board = await readBoard(env);
+      // Anti-usurpation : un pseudo réservé via connexion Epic ne peut pas être écrasé par /submit.
+      const claimed = Object.values(board).some((e) => e.epicVerified && (e.name || '').toLowerCase() === v.name.toLowerCase());
+      if (claimed) return json(env, { error: 'Ce pseudo est réservé par un joueur connecté avec Epic. Connecte-toi avec Epic pour le revendiquer.' }, 409);
+
       const score = Math.round(v.kills + v.wins * WIN_BONUS);
       const entry = {
         name: v.name,
@@ -116,10 +170,52 @@ export default {
         matches: v.matches,
         rank: rankNameFor(score),
         verified: true,
+        epicVerified: false,
         ts: Date.now(),
       };
+      board[v.name.toLowerCase()] = entry;
+      await env.LEADERBOARD.put('board', JSON.stringify(board));
+      return json(env, { ok: true, entry: entry });
+    }
+
+    // Config publique pour construire l'URL de connexion Epic côté navigateur.
+    if (url.pathname === '/epic/config' && request.method === 'GET') {
+      return json(env, {
+        clientId: env.EPIC_OAUTH_CLIENT_ID || '',
+        redirectUri: env.EPIC_REDIRECT_URI || '',
+        authorizeUrl: env.EPIC_AUTHORIZE_URL || OAUTH_DEFAULTS.AUTHORIZE_URL,
+        scope: env.EPIC_SCOPE || OAUTH_DEFAULTS.SCOPE,
+        configured: !!(env.EPIC_OAUTH_CLIENT_ID && env.EPIC_REDIRECT_URI),
+      });
+    }
+
+    // Retour de connexion Epic : échange le code, vérifie l'identité, publie le score.
+    if (url.pathname === '/epic/publish' && request.method === 'POST') {
+      let body;
+      try { body = await request.json(); } catch (e) { return json(env, { error: 'Corps JSON invalide.' }, 400); }
+      const code = cleanText(body.code, 512);
+      if (!code) return json(env, { error: "Code d'autorisation manquant." }, 400);
+
+      let identity;
+      try { identity = await epicExchange(env, code); } catch (e) { return json(env, { error: e.msg || 'Connexion Epic échouée.' }, e.status || 400); }
+      const dispName = cleanText(identity.displayName, MAX_NAME);
+      if (!dispName) return json(env, { error: 'Nom de compte Epic introuvable.' }, 502);
+
+      // Récupère les vraies stats (score calculé serveur), identité certifiée par Epic.
+      let v;
+      try { v = await fetchEpicStats(env, dispName, 'epic'); } catch (e) { return json(env, { error: e.msg || 'Stats indisponibles.' }, e.status || 400); }
+
+      const score = Math.round(v.kills + v.wins * WIN_BONUS);
+      const entry = {
+        name: v.name, accountId: identity.accountId,
+        score: score, kills: v.kills, wins: v.wins, matches: v.matches,
+        rank: rankNameFor(score), verified: true, epicVerified: true, ts: Date.now(),
+      };
       const board = await readBoard(env);
-      board[v.name.toLowerCase()] = entry; // une entrée par compte Epic (insensible à la casse)
+      // Nettoie une éventuelle entrée non certifiée au même nom, puis stocke par compte Epic.
+      const dupKey = (v.name || '').toLowerCase();
+      if (board[dupKey] && !board[dupKey].epicVerified) delete board[dupKey];
+      board['epic:' + identity.accountId] = entry;
       await env.LEADERBOARD.put('board', JSON.stringify(board));
       return json(env, { ok: true, entry: entry });
     }
@@ -127,7 +223,16 @@ export default {
     if (url.pathname === '/top' && request.method === 'GET') {
       const limit = Math.min(100, Math.max(1, num(url.searchParams.get('limit')) || 50));
       const board = await readBoard(env);
-      const players = Object.values(board)
+      // Dédoublonnage par pseudo : on privilégie les comptes certifiés Epic, puis le meilleur score.
+      const byName = {};
+      Object.values(board).forEach((e) => {
+        const k = (e.name || '').toLowerCase();
+        const cur = byName[k];
+        if (!cur || (e.epicVerified && !cur.epicVerified) || (e.epicVerified === cur.epicVerified && (e.score || 0) > (cur.score || 0))) {
+          byName[k] = e;
+        }
+      });
+      const players = Object.values(byName)
         .sort((a, b) => (b.score || 0) - (a.score || 0))
         .slice(0, limit);
       return json(env, { count: players.length, players: players });

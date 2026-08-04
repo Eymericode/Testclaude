@@ -64,9 +64,35 @@ Le client n'envoie **que le pseudo Epic** (+ plateforme). Le serveur :
 
 → Impossible de gonfler son score depuis le navigateur. Seuls les comptes Epic aux **stats publiques** peuvent rejoindre le classement.
 
+## 🔐 Connexion Epic (anti-usurpation) — optionnel
+
+Sans connexion, quelqu'un peut publier le **pseudo d'un autre**. Avec la connexion Epic, c'est **Epic** qui certifie l'identité.
+
+### Mise en place
+
+1. Dans le **Portail Développeur Epic**, crée une application et des identifiants **OAuth** (client_id + client_secret).
+2. Déclare la **Redirect URL** = l'URL exacte de ton app, ex. `https://eymericode.github.io/Testclaude/`.
+3. Configure le Worker :
+   ```bash
+   # variables (wrangler.toml [vars]) : EPIC_REDIRECT_URI, EPIC_OAUTH_CLIENT_ID
+   #   puis le secret :
+   npx wrangler secret put EPIC_OAUTH_CLIENT_SECRET
+   npx wrangler deploy
+   ```
+4. Vérifie : `GET /epic/config` doit renvoyer `"configured": true`.
+
+### Fonctionnement
+
+- L'app redirige le joueur vers Epic → il se connecte → Epic renvoie un `code` à ton app.
+- L'app envoie ce `code` au Worker (`POST /epic/publish`) → le Worker l'échange contre l'identité **certifiée** (compte + pseudo), récupère les stats, calcule le score, et publie une entrée **`epicVerified`**.
+- Un pseudo `epicVerified` ne peut plus être écrasé via `/submit` (anti-usurpation).
+
+> ⚠️ Les URLs Epic par défaut (`EPIC_TOKEN_URL`, `EPIC_ACCOUNT_URL`, `EPIC_AUTHORIZE_URL`) sont des valeurs de base **à confirmer dans la doc Epic** ; surcharge-les dans `wrangler.toml` si nécessaire.
+
 ## Notes
 
 - **Une entrée par compte Epic** (insensible à la casse) : republier met à jour tes stats.
+- Le classement privilégie les comptes **certifiés Epic** en cas de même pseudo.
 - **Vie privée** : le pseudo et le score publiés sont **visibles publiquement** via `/top`.
 - `ALLOW_ORIGIN` (wrangler.toml) restreint qui peut appeler le backend — mets l'URL de ton app, ou `*` pour tout autoriser.
 - Limite restante : quelqu'un peut publier le pseudo Epic **d'un autre** joueur (les stats resteront réelles, mais ce n'est pas « son » compte). Empêcher totalement l'usurpation demanderait une connexion Epic (OAuth) — possible en évolution.

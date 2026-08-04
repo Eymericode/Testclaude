@@ -17,3 +17,17 @@ id = "REMPLACE_PAR_TON_ID_KV"
 # côté serveur). NE le mets PAS ici, définis-le avec :
 #   npx wrangler secret put FORTNITE_API_KEY
 
+# --- Connexion Epic (OAuth, anti-usurpation) — optionnel ---
+# URL de ton app, où Epic renvoie après connexion (doit correspondre EXACTEMENT
+# à la "Redirect URL" déclarée dans le Portail Développeur Epic) :
+# EPIC_REDIRECT_URI = "https://eymericode.github.io/Testclaude/"
+# EPIC_OAUTH_CLIENT_ID = "ton_client_id"    # (peut aussi être un secret)
+# URLs Epic (par défaut ci-dessous ; à vérifier dans la doc Epic si besoin) :
+# EPIC_AUTHORIZE_URL = "https://www.epicgames.com/id/authorize"
+# EPIC_TOKEN_URL     = "https://api.epicgames.dev/epic/oauth/v2/token"
+# EPIC_ACCOUNT_URL   = "https://api.epicgames.dev/epic/oauth/v2/userInfo"
+# EPIC_SCOPE         = "basic_profile"
+#
+# Le secret client OAuth (obligatoire pour la connexion) :
+#   npx wrangler secret put EPIC_OAUTH_CLIENT_SECRET
+

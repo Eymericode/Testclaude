@@ -720,6 +720,36 @@
     }
   }
 
+  /* Traite le retour de connexion Epic (?code=…) au chargement de la page. */
+  async function handleEpicReturn() {
+    const params = new URLSearchParams(location.search);
+    const code = params.get('code');
+    const err = params.get('error');
+    if (!code && !err) return;
+    try { history.replaceState({}, '', location.pathname); } catch (e) { /* ignore */ }
+    switchTab('leaderboard');
+    const status = $('#lbStatus');
+    if (err) {
+      if (status) { status.className = 'key-test ko'; status.textContent = 'Connexion Epic annulée ou refusée.'; }
+      return;
+    }
+    const u = localStorage.getItem(LB_BACKEND_KEY);
+    if (!u) {
+      if (status) { status.className = 'key-test ko'; status.textContent = 'Backend du classement inconnu au retour de connexion.'; }
+      return;
+    }
+    if (status) { status.className = 'key-test pending'; status.textContent = '⏳ Vérification de ta connexion Epic…'; }
+    try {
+      const data = await global.Leaderboard.epicPublish(u, code);
+      const e = data.entry || {};
+      if (e.name) localStorage.setItem(LB_NAME_KEY, e.name);
+      await refreshLeaderboard();
+      if (status) { status.className = 'key-test ok'; status.textContent = `✅ Connecté et publié ! ${e.name || ''} — ${e.score || 0} pts (certifié Epic ✓)`; }
+    } catch (e2) {
+      if (status) { status.className = 'key-test ko'; status.textContent = '❌ ' + e2.message; }
+    }
+  }
+
   /* ---------- Rendu global ---------- */
   function renderDashboard() {
     const hasData = matches.length > 0;
@@ -910,6 +940,32 @@
       };
 
       $('#refreshLb').addEventListener('click', () => { persistLb(); refreshLeaderboard(); });
+
+      // Connexion Epic (OAuth) : redirige vers Epic pour certifier l'identité
+      $('#connectEpicBtn').addEventListener('click', async () => {
+        const { u } = persistLb();
+        const status = $('#lbStatus');
+        if (!u) { status.className = 'key-test ko'; status.textContent = "Renseigne d'abord l'URL du backend."; return; }
+        status.className = 'key-test pending';
+        status.textContent = '⏳ Préparation de la connexion Epic…';
+        try {
+          const cfg = await global.Leaderboard.epicConfig(u);
+          if (!cfg.configured || !cfg.clientId || !cfg.redirectUri) {
+            status.className = 'key-test ko';
+            status.textContent = "La connexion Epic n'est pas configurée sur le backend (voir leaderboard/README.md).";
+            return;
+          }
+          const authUrl = cfg.authorizeUrl +
+            '?client_id=' + encodeURIComponent(cfg.clientId) +
+            '&response_type=code' +
+            '&scope=' + encodeURIComponent(cfg.scope || 'basic_profile') +
+            '&redirect_uri=' + encodeURIComponent(cfg.redirectUri);
+          window.location.href = authUrl; // redirection vers Epic
+        } catch (err) {
+          status.className = 'key-test ko';
+          status.textContent = '❌ ' + err.message;
+        }
+      });
 
       $('#publishScore').addEventListener('click', async () => {
         const { u, n, p } = persistLb();
@@ -1185,4 +1241,5 @@
   bind();
   setDefaultDate();
   renderAll();
+  handleEpicReturn();
 })();
