@@ -679,6 +679,47 @@
     setTimeout(close, 7000);
   }
 
+  /* ---------- Classement (leaderboard) ---------- */
+  const LB_BACKEND_KEY = 'fortnite-tracker-lb-backend';
+  const LB_NAME_KEY = 'fortnite-tracker-lb-name';
+
+  function renderLbList(players, myName) {
+    const box = $('#lbList');
+    if (!box) return;
+    if (!players.length) {
+      box.innerHTML = '<p class="muted" style="margin-top:16px">Aucun joueur pour l\'instant. Sois le premier à publier ton score ! 🚀</p>';
+      return;
+    }
+    box.innerHTML = players.map((p, i) => {
+      const pos = i + 1;
+      const medal = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : '#' + pos;
+      const tier = RANK_TIERS[tierIndex(p.score || 0, GLOBAL_MIN)];
+      const me = myName && p.name && p.name.toLowerCase() === myName.toLowerCase();
+      return `<div class="lb-row ${me ? 'me' : ''}">
+        <div class="lb-pos">${medal}</div>
+        <div class="lb-name">${tier.emoji} ${escapeHtml(p.name || '?')}${me ? '<span class="lb-you">toi</span>' : ''}
+          <div class="lb-sub">${escapeHtml(p.rank || tier.name)} · ${p.kills || 0} kills · ${p.wins || 0} victoires · ${p.matches || 0} parties</div>
+        </div>
+        <div class="lb-score">${p.score || 0} pts</div>
+      </div>`;
+    }).join('');
+  }
+
+  async function refreshLeaderboard() {
+    const url = (localStorage.getItem(LB_BACKEND_KEY) || '').trim();
+    const status = $('#lbStatus');
+    $('#lbNeedsConfig').classList.toggle('hidden', !!url);
+    if (!url) { $('#lbList').innerHTML = ''; return; }
+    if (status) { status.className = 'key-test pending'; status.textContent = '⏳ Chargement du classement…'; }
+    try {
+      const players = await global.Leaderboard.top(url, 50);
+      renderLbList(players, (localStorage.getItem(LB_NAME_KEY) || '').trim());
+      if (status) { status.className = 'key-test'; status.textContent = ''; }
+    } catch (err) {
+      if (status) { status.className = 'key-test ko'; status.textContent = '❌ ' + err.message; }
+    }
+  }
+
   /* ---------- Rendu global ---------- */
   function renderDashboard() {
     const hasData = matches.length > 0;
@@ -727,6 +768,7 @@
     if (name === 'dashboard') renderDashboard();
     if (name === 'weekly') renderWeekly();
     if (name === 'ranks') renderRanks();
+    if (name === 'leaderboard') refreshLeaderboard();
     if (name === 'coach') renderCoach();
     if (name === 'live' && !liveLoaded && global.LiveData) {
       liveLoaded = true;
@@ -845,6 +887,46 @@
 
     // Synchronisation automatique
     if ($('#syncBtn')) $('#syncBtn').addEventListener('click', doSync);
+
+    // ----- Classement (leaderboard) -----
+    if ($('#lbBackendUrl')) {
+      const savedUrl = localStorage.getItem(LB_BACKEND_KEY);
+      if (savedUrl) $('#lbBackendUrl').value = savedUrl;
+      const savedName = localStorage.getItem(LB_NAME_KEY) || getEpicConfig().name;
+      if (savedName) $('#lbName').value = savedName;
+
+      const persistLb = () => {
+        const u = ($('#lbBackendUrl').value || '').trim();
+        const n = ($('#lbName').value || '').trim();
+        if (u) localStorage.setItem(LB_BACKEND_KEY, u); else localStorage.removeItem(LB_BACKEND_KEY);
+        if (n) localStorage.setItem(LB_NAME_KEY, n);
+        return { u, n };
+      };
+
+      $('#refreshLb').addEventListener('click', () => { persistLb(); refreshLeaderboard(); });
+
+      $('#publishScore').addEventListener('click', async () => {
+        const { u, n } = persistLb();
+        const status = $('#lbStatus');
+        if (!u) { status.className = 'key-test ko'; status.textContent = 'Renseigne l\'URL du backend du classement.'; return; }
+        if (!n) { status.className = 'key-test ko'; status.textContent = 'Choisis ton pseudo public.'; return; }
+        const s = computeStats(matches);
+        if (!s) { status.className = 'key-test ko'; status.textContent = 'Ajoute ou synchronise des parties avant de publier ton score.'; return; }
+        const score = rankScore(s);
+        const rankName = RANK_TIERS[tierIndex(score, GLOBAL_MIN)].name;
+        status.className = 'key-test pending';
+        status.textContent = '⏳ Publication…';
+        try {
+          await global.Leaderboard.submit(u, { name: n, score: score, kills: s.kills, wins: s.wins, matches: s.n, rank: rankName });
+          status.className = 'key-test ok';
+          status.textContent = '✅ Score publié ! Tu apparais dans le classement.';
+          refreshLeaderboard();
+        } catch (err) {
+          status.className = 'key-test ko';
+          status.textContent = '❌ ' + err.message;
+        }
+      });
+    }
 
     // Afficher / masquer la clé API
     if ($('#toggleKey')) {

@@ -284,6 +284,16 @@ hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
   100% { transform: translateY(105vh) rotate(680deg); opacity: .6; }
 }
 
+/* Classement */
+.lb-list { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+.lb-row { display: flex; align-items: center; gap: 14px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; }
+.lb-row.me { border-color: var(--accent2); box-shadow: 0 0 0 1px var(--accent2) inset; }
+.lb-pos { font-size: 20px; font-weight: 900; width: 42px; text-align: center; color: var(--muted); }
+.lb-name { flex: 1; font-weight: 800; min-width: 0; }
+.lb-name .lb-sub { font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+.lb-you { background: var(--accent2); color: #06232a; font-size: 11px; padding: 1px 7px; border-radius: 10px; margin-left: 6px; vertical-align: middle; }
+.lb-score { font-weight: 900; color: var(--gold); white-space: nowrap; }
+
 .foot { text-align: center; color: var(--muted); font-size: 12px; padding: 24px; }
 
 .api-stat { display:inline-block; background: var(--panel2); border:1px solid var(--border); border-radius:8px; padding:8px 12px; margin:4px; font-size:13px; }

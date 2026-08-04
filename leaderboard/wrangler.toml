@@ -1,0 +1,14 @@
+name = "fn-leaderboard"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Origine autorisée à appeler le classement (ton app).
+[vars]
+ALLOW_ORIGIN = "https://eymericode.github.io"
+
+# Namespace KV pour stocker le classement.
+# Crée-le avec :  npx wrangler kv namespace create LEADERBOARD
+# puis colle l'id renvoyé ci-dessous.
+[[kv_namespaces]]
+binding = "LEADERBOARD"
+id = "REMPLACE_PAR_TON_ID_KV"

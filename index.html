@@ -36,6 +36,7 @@
       <button class="tab" data-tab="add">Synchro</button>
       <button class="tab" data-tab="weekly">Hebdo</button>
       <button class="tab" data-tab="ranks">Rang</button>
+      <button class="tab" data-tab="leaderboard">Classement</button>
       <button class="tab" data-tab="reminders">Rappels</button>
       <button class="tab" data-tab="coach">Coach</button>
       <button class="tab" data-tab="import">Données / API</button>
@@ -283,6 +284,36 @@
       <div id="rankContent"></div>
     </section>
 
+    <!-- ================= LEADERBOARD ================= -->
+    <section id="leaderboard" class="panel">
+      <h2>🏅 Classement des joueurs</h2>
+      <p class="muted">Compare-toi aux autres joueurs de l'app ! Publie ton score pour apparaître dans le classement.
+        ⚠️ Ton <strong>pseudo et ton score deviennent visibles</strong> par les autres.</p>
+
+      <div id="lbNeedsConfig" class="insight warn hidden">
+        <h4>⚙️ Backend requis</h4>
+        <p>Le classement a besoin d'un backend partagé. Déploie-le en suivant <code>leaderboard/README.md</code>, puis colle l'URL de ton Worker ci-dessous.</p>
+      </div>
+
+      <div class="form">
+        <div class="grid2">
+          <label>URL du backend classement
+            <input type="url" id="lbBackendUrl" placeholder="https://fn-leaderboard.xxxx.workers.dev" />
+          </label>
+          <label>Ton pseudo public
+            <input type="text" id="lbName" maxlength="24" placeholder="Ton pseudo affiché" />
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn primary" id="publishScore">📤 Publier mon score</button>
+          <button type="button" class="btn" id="refreshLb">🔄 Rafraîchir</button>
+        </div>
+        <div id="lbStatus" class="key-test"></div>
+      </div>
+
+      <div id="lbList" class="lb-list"></div>
+    </section>
+
     <!-- ================= REMINDERS ================= -->
     <section id="reminders" class="panel">
       <h2>🔔 Rappels des jours de jeu</h2>
@@ -429,6 +460,7 @@
   <script src="js/charts.js"></script>
   <script src="js/api.js"></script>
   <script src="js/live.js"></script>
+  <script src="js/leaderboard.js"></script>
   <script src="js/reminders.js"></script>
   <script src="js/pwa.js"></script>
   <script src="js/app.js"></script>
